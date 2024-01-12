@@ -1,0 +1,89 @@
+{
+	"provider": {
+		"name": "rackspacespot"
+	},
+	"resources": [
+		{
+			"name": "cloudspace",
+			"schema": {
+				"attributes": [
+					{
+						"name": "api_version",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+						}
+					},
+					{
+						"name": "kind",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+						}
+					},
+					{
+						"name": "metadata",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "name",
+									"string": {
+										"computed_optional_required": "computed_optional",
+										"description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names"
+									}
+								},
+								{
+									"name": "namespace",
+									"string": {
+										"computed_optional_required": "computed_optional",
+										"description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces"
+									}
+								}
+							],
+							"description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create."
+						}
+					},
+					{
+						"name": "spec",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "hacontrol_plane",
+									"bool": {
+										"computed_optional_required": "computed_optional",
+										"description": "Set to Enable control plane HA and setting HACount"
+									}
+								},
+								{
+									"name": "cloud",
+									"string": {
+										"computed_optional_required": "required",
+										"description": "Cloud describes to which Cloud the CloudSpace belongs to."
+									}
+								},
+								{
+									"name": "region",
+									"string": {
+										"computed_optional_required": "required",
+										"description": "Region specifies the region which the CloudSpace should be in."
+									}
+								},
+								{
+									"name": "webhook",
+									"string": {
+										"computed_optional_required": "computed_optional",
+										"description": "Optional webhook that will be invoked when Servers of this CloudSpace are released"
+									}
+								}
+							],
+							"description": "CloudSpaceSpec defines the desired state of CloudSpace"
+						}
+					}
+				]
+			}
+		}
+	],
+	"version": "0.1"
+}

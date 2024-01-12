@@ -1,0 +1,17 @@
+provider:
+  name: rackspacespot
+
+resources:
+  cloudspace:
+    create:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces
+      method: POST
+    read:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces/{name}
+      method: GET
+    update:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces/{name}
+      method: PUT
+    delete:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces/{name}
+      method: DELETE
