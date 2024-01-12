@@ -4,100 +4,82 @@ import (
 	"context"
 	"os"
 
+	"terraform-provider-rxtspot/internal/provider/provider_rxtspot"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
-	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 )
 
-var _ provider.Provider = (*rackspacespotProvider)(nil)
+var _ provider.Provider = (*rxtSpotProvider)(nil)
 
 func New() func() provider.Provider {
 	return func() provider.Provider {
-		return &rackspacespotProvider{}
+		return &rxtSpotProvider{}
 	}
 }
 
-type rackspacespotProvider struct {
-	NGPCApiserver types.String `tfsdk:"ngpc_apiserver"`
+type rxtSpotProvider struct{}
+
+func (p *rxtSpotProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = provider_rxtspot.RxtspotProviderSchema(ctx)
 }
 
-func (p *rackspacespotProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Attributes: map[string]schema.Attribute{
-			"ngpc_apiserver": schema.StringAttribute{
-				Description: "The address of the NGPC API server",
-				Required:    true,
-			},
-		},
-	}
-}
-
-func (p *rackspacespotProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config rackspacespotProvider
+func (p *rxtSpotProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var config provider_rxtspot.RxtspotModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if config.NGPCApiserver.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("ngpc_apiserver"),
-			"Unknown ngpc_apiserver",
-			"The ngpc_apiserver is unknown",
-		)
-	}
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	ngpcApiserver := os.Getenv("NGPC_APISERVER")
 
-	if !config.NGPCApiserver.IsNull() {
-		ngpcApiserver = config.NGPCApiserver.ValueString()
+	ngpcAPIServer := os.Getenv("NGPC_APISERVER")
+	if ngpcAPIServer == "" {
+		ngpcAPIServer = "https://spot.rackspace.com"
+	} else {
+		tflog.Info(ctx, "Using provided ngpc api server", map[string]any{"ngpcAPIServer": ngpcAPIServer})
 	}
 
-	if ngpcApiserver == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("ngpc_apiserver"),
-			"Missing ngpc_apiserver",
-			"Missing ngpc_apiserver.",
-		)
+	rxtSpotToken := os.Getenv("RXTSPOT_TOKEN")
+	if rxtSpotToken == "" {
+		rxtSpotTokenFile, found := os.LookupEnv("RXTSPOT_TOKEN_FILE")
+		if !found {
+			resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable")
+			return
+		}
+		var err error
+		rxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to read authentication token from file", err.Error())
+			return
+		}
 	}
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ngpcAuthToken := os.Getenv("NGPC_AUTH_TOKEN")
-	if ngpcAuthToken == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("ngpc_auth_token"),
-			"Missing ngpc_auth_token",
-			"Missing ngpc_auth_token.",
-		)
-	}
-
-	cfg := ngpc.NewConfig(ngpcApiserver, ngpcAuthToken, true)
+	cfg := ngpc.NewConfig(ngpcAPIServer, rxtSpotToken, true)
 	ngpcClient, err := ngpc.CreateClientForConfig(cfg)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
 	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.ResourceData = ngpcClient
+	resp.DataSourceData = ngpcClient
 }
 
-func (p *rackspacespotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "rackspacespot"
+func (p *rxtSpotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "rxtspot"
 }
 
-func (p *rackspacespotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *rxtSpotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{}
 }
 
-func (p *rackspacespotProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *rxtSpotProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewCloudspaceResource,
+		NewSpotnodepoolsResource,
 	}
 }

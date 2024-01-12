@@ -1,6 +1,9 @@
 {
 	"provider": {
-		"name": "rackspacespot"
+		"name": "rxtspot",
+		"schema": {
+			"attributes": []
+		}
 	},
 	"resources": [
 		{
@@ -8,77 +11,188 @@
 			"schema": {
 				"attributes": [
 					{
-						"name": "api_version",
+						"name": "id",
 						"string": {
-							"computed_optional_required": "computed_optional",
-							"description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
-						}
-					},
-					{
-						"name": "kind",
-						"string": {
-							"computed_optional_required": "computed_optional",
-							"description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
-						}
-					},
-					{
-						"name": "metadata",
-						"single_nested": {
-							"computed_optional_required": "computed_optional",
-							"attributes": [
+							"computed_optional_required": "computed",
+							"description": "The id of the cloudspace.",
+							"plan_modifiers": [
 								{
-									"name": "name",
-									"string": {
-										"computed_optional_required": "computed_optional",
-										"description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names"
-									}
-								},
-								{
-									"name": "namespace",
-									"string": {
-										"computed_optional_required": "computed_optional",
-										"description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces"
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
 									}
 								}
-							],
-							"description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create."
+							]
 						}
 					},
 					{
-						"name": "spec",
+						"name": "last_updated",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The last time the cloudspace was updated."
+						}
+					},
+					{
+						"name": "resource_version",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform."
+						}
+					},
+					{
+						"name": "cloudspace_name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The name of the cloudspace."
+						}
+					},
+					{
+						"name": "organization",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The organization to which the cloudspace belongs."
+						}
+					},
+					{
+						"name": "hacontrol_plane",
+						"bool": {
+							"computed_optional_required": "optional",
+							"description": "Indicates if the control plane should be highly available."
+						}
+					},
+					{
+						"name": "region",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The region where the cloudspace will be created.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.OneOf(\n\"us-central-dfw-1\",\n\"us-east-iad-1\",\n)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "preemption_webhook",
+						"string": {
+							"computed_optional_required": "optional",
+							"description": "Webhook URL for preemption notifications."
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "spotnodepools",
+			"schema": {
+				"attributes": [
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The id of the cloudspace.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "last_updated",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The last time the spotnodepools was updated."
+						}
+					},
+					{
+						"name": "resource_version",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform."
+						}
+					},
+					{
+						"name": "organization",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The organization to which the cloudspace belongs."
+						}
+					},
+					{
+						"name": "cloudspace_name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The name of the cloudspace."
+						}
+					},
+					{
+						"name": "server_class",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The class of servers to use for the node pool."
+						}
+					},
+					{
+						"name": "desired_server_count",
+						"int64": {
+							"computed_optional_required": "required",
+							"description": "The desired number of servers in the node pool."
+						}
+					},
+					{
+						"name": "bid_price",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The bid price for the server."
+						}
+					},
+					{
+						"name": "autoscaling",
 						"single_nested": {
-							"computed_optional_required": "computed_optional",
+							"computed_optional_required": "optional",
 							"attributes": [
 								{
-									"name": "hacontrol_plane",
+									"name": "enabled",
 									"bool": {
-										"computed_optional_required": "computed_optional",
-										"description": "Set to Enable control plane HA and setting HACount"
+										"computed_optional_required": "optional",
+										"description": "Indicates if autoscaling is enabled."
 									}
 								},
 								{
-									"name": "cloud",
-									"string": {
-										"computed_optional_required": "required",
-										"description": "Cloud describes to which Cloud the CloudSpace belongs to."
+									"name": "max_nodes",
+									"int64": {
+										"computed_optional_required": "optional",
+										"description": "The maximum number of nodes in the node pool."
 									}
 								},
 								{
-									"name": "region",
-									"string": {
-										"computed_optional_required": "required",
-										"description": "Region specifies the region which the CloudSpace should be in."
-									}
-								},
-								{
-									"name": "webhook",
-									"string": {
-										"computed_optional_required": "computed_optional",
-										"description": "Optional webhook that will be invoked when Servers of this CloudSpace are released"
+									"name": "min_nodes",
+									"int64": {
+										"computed_optional_required": "optional",
+										"description": "The minimum number of nodes in the node pool."
 									}
 								}
 							],
-							"description": "CloudSpaceSpec defines the desired state of CloudSpace"
+							"description": "Scales the nodes in a cluster based on based on usage."
 						}
 					}
 				]

@@ -1,7 +1,8 @@
 provider:
-  name: rackspacespot
+  name: rxtspot
 
 resources:
+  # Ref: https://spot.rackspace.com/docs/rxt_spot_api#readngpcrxtiov1namespacedcloudspace
   cloudspace:
     create:
       path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces
@@ -15,3 +16,18 @@ resources:
     delete:
       path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces/{name}
       method: DELETE
+
+  spotnodepools:
+    create:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/spotnodepools
+      method: POST
+    read:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/spotnodepools/{name}
+      method: GET
+    update:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/spotnodepools/{name}
+      method: PUT
+    delete:
+      path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/spotnodepools/{name}
+      method: DELETE
+
