@@ -50,6 +50,7 @@ func (p *rxtSpotProvider) Configure(ctx context.Context, req provider.ConfigureR
 			resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable")
 			return
 		}
+		tflog.Debug(ctx, "Reading authentication token from file", map[string]any{"rxtSpotTokenFile": rxtSpotTokenFile})
 		var err error
 		rxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
 		if err != nil {

@@ -20,6 +20,9 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The name of the cloudspace.",
 				MarkdownDescription: "The name of the cloudspace.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"hacontrol_plane": schema.BoolAttribute{
 				Optional:            true,
@@ -43,6 +46,9 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The organization to which the cloudspace belongs.",
 				MarkdownDescription: "The organization to which the cloudspace belongs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"preemption_webhook": schema.StringAttribute{
 				Optional:            true,
@@ -53,6 +59,9 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The region where the cloudspace will be created.",
 				MarkdownDescription: "The region where the cloudspace will be created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"us-central-dfw-1",
