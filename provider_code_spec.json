@@ -1,6 +1,6 @@
 {
 	"provider": {
-		"name": "rxtspot",
+		"name": "spot",
 		"schema": {
 			"attributes": []
 		}

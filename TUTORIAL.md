@@ -1,4 +1,4 @@
-# How to Generate a Terraform Provider from OpenAPI Spec?
+# Steps followed to Build a Terraform Provider from OpenAPI Spec
 
 1. To generate something called "provider_code_spec" from openapi spec we need "openapi-generator". Read more here: [Terraform OpenAPI Generator Documentation](https://developer.hashicorp.com/terraform/plugin/code-generation/openapi-generator). We will figure out what is "provider_code_spec" in further steps.
 
@@ -22,7 +22,7 @@
 2. Before generating code let's set up a go-project. Learn more: [Terraform Workflow Example](https://developer.hashicorp.com/terraform/plugin/code-generation/workflow-example)
 
     ```
-    go mod init terraform-provider-rxtspot
+    go mod init terraform-provider-spot
     touch main.go
     mkdir -p internal/provider # this is the directory where the framework generator will generate go-code
     ```
@@ -41,7 +41,7 @@
 
     Generate starter code that initializes provider (boilerplate):
     ```
-    tfplugingen-framework scaffold provider --name rxtspot --output-dir ./internal/provider
+    tfplugingen-framework scaffold provider --name spot --output-dir ./internal/provider
     ```
     This command generates `internal/provider.go` which contains the implementation of `provider.Provider` interface.
 
@@ -55,13 +55,13 @@
     import (
         "context"
         "log"
-        "terraform-provider-rxtspot/internal/provider"
+        "github.com/rackerlabs/terraform-provider-spot/internal/provider"
         "github.com/hashicorp/terraform-plugin-framework/providerserver"
     )
 
     func main() {
         opts := providerserver.ServeOpts{
-            Address: "ngpc.rxt.io/rackerlabs/rxtspot",
+            Address: "ngpc.rxt.io/rackerlabs/spot",
         }
 
         err := providerserver.Serve(context.Background(), provider.New(), opts)
@@ -83,7 +83,7 @@
     provider_installation {
       dev_overrides {
         # Replace with your own GOBIN path. Default is $GOPATH/bin
-        "ngpc.rxt.io/rackerlabs/rxtspot" = "/home/nilesh/go/bin"
+        "ngpc.rxt.io/rackerlabs/spot" = "/home/nilesh/go/bin"
       }
       direct {}
     }
@@ -95,12 +95,12 @@
     terraform {
       required_providers {
         petstore = {
-          source = "ngpc.rxt.io/rackerlabs/rxtspot"
+          source = "ngpc.rxt.io/rackerlabs/spot"
         }
       }
     }
 
-    provider "rxtspot" {}
+    provider "spot" {}
     ```
 
 6. Scaffold resources, data-sources:

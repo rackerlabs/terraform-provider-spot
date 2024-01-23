@@ -3,8 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"terraform-provider-rxtspot/internal/provider/resource_spotnodepools"
 	"time"
+
+	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_spotnodepools"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"

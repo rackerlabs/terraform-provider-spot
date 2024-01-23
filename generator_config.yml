@@ -1,5 +1,5 @@
 provider:
-  name: rxtspot
+  name: spot
 
 resources:
   # Ref: https://spot.rackspace.com/docs/rxt_spot_api#readngpcrxtiov1namespacedcloudspace

@@ -4,32 +4,32 @@ import (
 	"context"
 	"os"
 
-	"terraform-provider-rxtspot/internal/provider/provider_rxtspot"
-
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/rackerlabs/terraform-provider-spot/internal/provider/provider_spot"
+
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 )
 
-var _ provider.Provider = (*rxtSpotProvider)(nil)
+var _ provider.Provider = (*spotProvider)(nil)
 
 func New() func() provider.Provider {
 	return func() provider.Provider {
-		return &rxtSpotProvider{}
+		return &spotProvider{}
 	}
 }
 
-type rxtSpotProvider struct{}
+type spotProvider struct{}
 
-func (p *rxtSpotProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema = provider_rxtspot.RxtspotProviderSchema(ctx)
+func (p *spotProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = provider_spot.SpotProviderSchema(ctx)
 }
 
-func (p *rxtSpotProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config provider_rxtspot.RxtspotModel
+func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var config provider_spot.SpotModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -70,15 +70,15 @@ func (p *rxtSpotProvider) Configure(ctx context.Context, req provider.ConfigureR
 	resp.DataSourceData = ngpcClient
 }
 
-func (p *rxtSpotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "rxtspot"
+func (p *spotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "spot"
 }
 
-func (p *rxtSpotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{}
 }
 
-func (p *rxtSpotProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *spotProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewCloudspaceResource,
 		NewSpotnodepoolsResource,

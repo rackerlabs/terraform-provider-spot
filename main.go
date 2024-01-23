@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"terraform-provider-rxtspot/internal/provider"
+	"github.com/rackerlabs/terraform-provider-spot/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "ngpc.rxt.io/rackerlabs/rxtspot",
+		Address: "ngpc.rxt.io/rackerlabs/spot",
 		Debug:   debug,
 	}
 
