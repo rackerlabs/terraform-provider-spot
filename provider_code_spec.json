@@ -1,6 +1,6 @@
 {
 	"provider": {
-		"name": "rxtspot",
+		"name": "spot",
 		"schema": {
 			"attributes": []
 		}
@@ -47,14 +47,38 @@
 						"name": "cloudspace_name",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The name of the cloudspace."
+							"description": "The name of the cloudspace.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "organization",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The organization to which the cloudspace belongs."
+							"description": "The organization to which the cloudspace belongs.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							]
 						}
 					},
 					{
@@ -78,6 +102,18 @@
 											}
 										],
 										"schema_definition": "stringvalidator.OneOf(\n\"us-central-dfw-1\",\n\"us-east-iad-1\",\n)"
+									}
+								}
+							],
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
 									}
 								}
 							]
@@ -134,21 +170,57 @@
 						"name": "organization",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The organization to which the cloudspace belongs."
+							"description": "The organization to which the cloudspace belongs.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "cloudspace_name",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The name of the cloudspace."
+							"description": "The name of the cloudspace.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The class of servers to use for the node pool."
+							"description": "The class of servers to use for the node pool.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							]
 						}
 					},
 					{

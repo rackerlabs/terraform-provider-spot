@@ -1,7 +1,8 @@
-# Note that provider name should not contain underscore or dash, it causes issues while discovery
-PROVIDER_NAME := rxtspot
+PROVIDER_NAME := spot
+GOBIN := $(PWD)/bin
+PATH := $(GOBIN):$(PATH)
 
-.PHONY: generate scaffold-ds scaffold-rs scaffold-provider build install apply clean uninstall test fmt lint check-versions docs
+.PHONY: generate scaffold-ds scaffold-rs scaffold-provider build install apply destroy clean uninstall test fmt lint check-versions docs
 
 generate:
 	echo "Generating provider, resources, data-sources schema files from provider_code_spec.json..."
@@ -12,8 +13,12 @@ install:
 	go install .
 
 apply:
-	echo "Applying sample-terraform..."
-	cd examples/simple-cloudspace && terraform apply -auto-approve && cd ../..
+	echo "Applying simple-cloudspace..."
+	cd _examples/simple-cloudspace && terraform apply -auto-approve && cd ../..
+
+destroy:
+	echo "Applying simple-cloudspace..."
+	cd _examples/simple-cloudspace && terraform destroy -auto-approve && cd ../..
 
 clean:
 	echo "Cleaning up..."
@@ -63,15 +68,11 @@ scaffold-provider:
 	tfplugingen-framework scaffold resource --name $(PROVIDER_NAME) --output-dir ./internal/provider --force
 
 dependencies:
-	echo "Installing dependencies..."
+	@echo "Installing dependencies..."
 	go install github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen@latest
-	go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework@latest
 
 check-versions:
-	echo "Checking Go version..."
-	# TODO: Do this programmatically
-	echo "Go version must be at least 1.21.4"
-	echo "Checking Terraform version..."
-	echo "Terraform version must be at least 1.6.6"
-	echo "Checking tfplugingen-framework version..."
-	echo "tfplugingen-framework version must be at least 0.3.1"
+	@echo "Checking Go version..."
+	@echo "Go version must be at least 1.21.4"
+	@echo "Checking Terraform version..."
+	@echo "Terraform version must be at least 1.6.6"

@@ -56,6 +56,9 @@ func SpotnodepoolsResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The name of the cloudspace.",
 				MarkdownDescription: "The name of the cloudspace.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"desired_server_count": schema.Int64Attribute{
 				Required:            true,
@@ -79,6 +82,9 @@ func SpotnodepoolsResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The organization to which the cloudspace belongs.",
 				MarkdownDescription: "The organization to which the cloudspace belongs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"resource_version": schema.StringAttribute{
 				Computed:            true,
@@ -89,6 +95,9 @@ func SpotnodepoolsResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The class of servers to use for the node pool.",
 				MarkdownDescription: "The class of servers to use for the node pool.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

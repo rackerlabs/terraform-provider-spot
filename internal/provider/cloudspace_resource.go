@@ -3,8 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"terraform-provider-rxtspot/internal/provider/resource_cloudspace"
 	"time"
+
+	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
