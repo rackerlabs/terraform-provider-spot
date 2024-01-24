@@ -1,2 +1,3 @@
-# Cloudpspace can be imported by specifying the numeric identifier.
-terraform import spot_cloudspace.example 123
+# Cloudspace can be imported by specifying its id.
+# The id is the organization id(namespace) followed by a slash, followed by the name of the cloudspace.
+terraform import spot_spotnodepools.example org-yxrstzzs6qqokjva/example

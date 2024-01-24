@@ -49,3 +49,4 @@ Links
 - https://developer.hashicorp.com/terraform/plugin/framework
 - https://developer.hashicorp.com/terraform/plugin/code-generation
 - https://developer.hashicorp.com/terraform/plugin/code-generation/framework-generator
+- https://developer.hashicorp.com/terraform/plugin/framework/handling-data/terraform-concepts
