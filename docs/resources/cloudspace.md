@@ -43,12 +43,12 @@ resource "spot_cloudspace" "example" {
 - `last_updated` (String) The last time the cloudspace was updated.
 - `resource_version` (String) The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.
 
-## Available regions
+### Available Regions
 
-| Region           | Location                          |
-|------------------|-----------------------------------|
+| Region             | Location                          |
+|--------------------|-----------------------------------|
 | `us-central-dfw-1` | US Central, Dallas Fort Worth, TX |
-| `us-east-iad-1`| US East, Ashburn, VA              |
+| `us-east-iad-1`    | US East, Ashburn, VA              |
 
 ## Import
 
