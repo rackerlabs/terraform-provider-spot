@@ -28,7 +28,7 @@ resource "spot_spotnodepools" "small-nodes" {
   cloudspace_name      = spot_cloudspace.my-cloudspace.cloudspace_name
   organization         = spot_cloudspace.my-cloudspace.organization
   server_class         = "gp.vs1.small-dfw"
-  bid_price            = "10.002"
+  bid_price            = "2.002"
   desired_server_count = 2
   autoscaling = {
     enabled   = true
@@ -41,6 +41,6 @@ resource "spot_spotnodepools" "medium-nodes" {
   cloudspace_name      = spot_cloudspace.my-cloudspace.cloudspace_name
   organization         = spot_cloudspace.my-cloudspace.organization
   server_class         = "gp.vs1.medium-dfw"
-  bid_price            = "0.012"
+  bid_price            = "1.012"
   desired_server_count = 2
 }

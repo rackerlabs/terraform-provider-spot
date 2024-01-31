@@ -12,10 +12,7 @@
     Write `generator_config.yml`, that classifies resources from `spot-api-3.0.json` into provider, resources and data-sources.
 
     ```
-    tfplugingen-openapi generate \
-      --config ./generator_config.yml \
-      --output ./provider_code_spec.json \
-      ./openapi-spec/spot-api-3.0.json
+    tfplugingen-openapi generate --config ./generator_config.yml --output ./provider_code_spec.json /openapi-spec/spot-api-3.0.json
     ```
     This generates `provider_code_spec.json` in the current directory. The `provider_code_spec.json` can be used by "framework generator" in next steps to generate actual go-code for our terraform provider.
 
