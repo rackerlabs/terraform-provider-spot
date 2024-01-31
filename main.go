@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "ngpc.rxt.io/rackerlabs/spot",
+		Address: "registry.terraform.io/rackerlabs/spot",
 		Debug:   debug,
 	}
 
