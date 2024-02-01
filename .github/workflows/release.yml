@@ -17,7 +17,7 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@v4
         with:
           # Allow goreleaser to access older tag information.
           fetch-depth: 0
@@ -31,6 +31,12 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
+      - name: Checkout Required Dependency
+        uses: actions/checkout@v4
+        with:
+          repository: RSS-Engineering/ngpc-cp
+          path: ../ngpc-cp
+          token: ${{ secrets.NGPC_PAT }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
         with:
