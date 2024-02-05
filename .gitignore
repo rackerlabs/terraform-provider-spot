@@ -3,3 +3,5 @@ terraform.tfstate.backup
 *.tfvars
 /bin
 /dist
+/gpg-keys
+.vscode/settings.json

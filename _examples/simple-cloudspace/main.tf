@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     spot = {
-      source = "ngpc.rxt.io/rackerlabs/spot"
+      source = "rackerlabs/spot"
     }
   }
 }

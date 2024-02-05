@@ -16,13 +16,20 @@ import (
 
 var _ provider.Provider = (*spotProvider)(nil)
 
-func New() func() provider.Provider {
+// New creates Provider with given version
+// Version is not connected to any framework functionality currently, but may be in the future.
+// Terraform uses the version from the GH release tag only. Hence value set here doesnt matter.
+func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &spotProvider{}
+		return &spotProvider{
+			Version: version,
+		}
 	}
 }
 
-type spotProvider struct{}
+type spotProvider struct {
+	Version string
+}
 
 func (p *spotProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = provider_spot.SpotProviderSchema(ctx)
@@ -72,6 +79,7 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 func (p *spotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "spot"
+	resp.Version = p.Version
 }
 
 func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
