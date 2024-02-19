@@ -78,19 +78,18 @@ A Cloudspace represents a logical unit of your cloud infrastructure. It includes
 Here's a brief explanation of the configuration:
 
 - `example` is the name of the cloudspace
-- `my-org` is the organization under which the cloudspace will be created
 - `us-central-dfw-1` is the rackspace region where the cloudspace will be created
 - Refer to the detailed documentation on the [cloudspace resource](resources/cloudspace.md) for more configuration options.
 
-In Spot, you cant add an individual servers to the cloudspace, but you have to add a group of servers to the cloudspace, called spotnodepool. A spotnodepool is essentially a grouping of servers, and each spotnodepool consists of servers that share the same hardware specifications, such as CPU and memory configurations. This grouping allows for better organization and management of resources within your cloud environment. You can specify multiple spotnodepools in a cloudspace. All such spotnodepools will be part of same kubernetes cluster(cloudspace). All the servers in a spotnodepool will be charged at the same price, the price set by you as the value the field `bid_price`.
+In Spot, you cant add an individual servers to the cloudspace, but you have to add a group of servers to the cloudspace, called spotnodepool. A spotnodepool is essentially a grouping of servers, and each spotnodepool consists of servers that share the same hardware specifications, such as CPU and memory configurations. This grouping allows for better organization and management of resources within your cloud environment. You can specify multiple spotnodepool in a cloudspace. All such spotnodepool will be part of same kubernetes cluster(cloudspace). All the servers in a spotnodepool will be charged at the same price, the price set by you as the value the field `bid_price`.
 
-{{ tffile "examples/spotnodepools/nonautoscaling.tf" }}
+{{ tffile "examples/spotnodepool/nonautoscaling.tf" }}
 
 A spotnodepool can be configured to dynamically adjust the number of servers based on demand. This is known as autoscaling. When demand is high, the spotnodepool can automatically increase the number of servers, and when demand decreases, it can scale down to optimize costs. You can specify the minimum and maximum number of servers in the spotnodepool, and the spotnodepool will automatically scale up or down based on the load. 
 
-{{ tffile "examples/spotnodepools/autoscaling.tf" }}
+{{ tffile "examples/spotnodepool/autoscaling.tf" }}
 
-You can read about the various configuration options for spotnodepools [here](resources/spotnodepools.md).
+You can read about the various configuration options for spotnodepool [here](resources/spotnodepool.md).
 
 9. **Apply the Terraform configuration:**
 

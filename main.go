@@ -13,11 +13,14 @@ import (
 // Format example terraform files
 //go:generate terraform fmt -recursive ./examples/
 
+// Install the codegen tool
+//go:generate go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework
+
+// Generate resource, datasource, provider schema from provider_code_spec.json using codegen tool
+//go:generate tfplugingen-framework generate all --input ./provider_code_spec.json --output internal/provider
+
 // Run the docs generation tool
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-
-// Generate resource, datasource, provider schema from provider_code_spec.json
-//go:generate go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework
 
 var (
 	// these will be set by the goreleaser configuration

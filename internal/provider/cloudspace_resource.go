@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
@@ -66,14 +67,34 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	orgName := data.Organization.ValueString()
-	tflog.Debug(ctx, "Getting namespace associated with organization", map[string]any{"name": orgName})
-	namespace, err := findNamespaceForOrganization(ctx, r.client, orgName)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to find namespace for organization", err.Error())
+	namespace := os.Getenv("RXTSPOT_ORG_NS")
+	if namespace == "" {
+		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
 		return
 	}
-	tflog.Debug(ctx, "Got namespace associated with organization", map[string]any{"namespace": namespace})
+	tflog.Debug(ctx, "Using namespace from environment", map[string]any{"namespace": namespace})
+
+	regionsList := ngpcv1.RegionList{}
+	err := r.client.List(ctx, &regionsList)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get regions", err.Error())
+		return
+	}
+	var validRegion bool
+	for _, region := range regionsList.Items {
+		if region.Name == data.Region.ValueString() {
+			validRegion = true
+			break
+		}
+	}
+	if !validRegion {
+		regionNames := make([]string, len(regionsList.Items))
+		for i, region := range regionsList.Items {
+			regionNames[i] = region.Name
+		}
+		resp.Diagnostics.AddAttributeError(path.Root("region"), "Invalid region", fmt.Sprintf("Allowed values are: %v", regionNames))
+		return
+	}
 
 	cloudspace := &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{

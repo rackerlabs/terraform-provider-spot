@@ -3,13 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
-	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_spotnodepools"
-
-	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -17,31 +13,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+
+	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_spotnodepool"
+
+	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
+	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ resource.Resource = (*spotnodepoolsResource)(nil)
-var _ resource.ResourceWithConfigure = (*spotnodepoolsResource)(nil)
-var _ resource.ResourceWithImportState = (*spotnodepoolsResource)(nil)
+var _ resource.Resource = (*spotnodepoolResource)(nil)
+var _ resource.ResourceWithConfigure = (*spotnodepoolResource)(nil)
+var _ resource.ResourceWithImportState = (*spotnodepoolResource)(nil)
 
-func NewSpotnodepoolsResource() resource.Resource {
-	return &spotnodepoolsResource{}
+func NewSpotnodepoolResource() resource.Resource {
+	return &spotnodepoolResource{}
 }
 
-type spotnodepoolsResource struct {
+type spotnodepoolResource struct {
 	client *ngpc.HTTPClient
 }
 
-func (r *spotnodepoolsResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_spotnodepools"
+func (r *spotnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_spotnodepool"
 }
 
-func (r *spotnodepoolsResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = resource_spotnodepools.SpotnodepoolsResourceSchema(ctx)
+func (r *spotnodepoolResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_spotnodepool.SpotnodepoolResourceSchema(ctx)
 }
 
-func (r *spotnodepoolsResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *spotnodepoolResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -59,8 +61,8 @@ func (r *spotnodepoolsResource) Configure(ctx context.Context, req resource.Conf
 	r.client = client
 }
 
-func (r *spotnodepoolsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data resource_spotnodepools.SpotnodepoolsModel
+func (r *spotnodepoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data resource_spotnodepool.SpotnodepoolModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -71,14 +73,8 @@ func (r *spotnodepoolsResource) Create(ctx context.Context, req resource.CreateR
 
 	// Create API call logic
 	// TODO: OrgName should be read from parent cloudspace resource or provider config
-	orgName := data.Organization.ValueString()
-	tflog.Debug(ctx, "Getting namespace associated with organization", map[string]any{"name": orgName})
-	namespace, err := findNamespaceForOrganization(ctx, r.client, orgName)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to find namespace for organization", err.Error())
-		return
-	}
-	tflog.Debug(ctx, "Got namespace associated with organization", map[string]any{"namespace": namespace})
+	namespace := os.Getenv("RXTSPOT_ORG_NS")
+	tflog.Debug(ctx, "Using namespace from environment variable", map[string]any{"namespace": namespace})
 
 	// Creating spotnodepool with same cloudspace name, they will be linked by cloudspace name
 	spotNodePool := &ngpcv1.SpotNodePool{
@@ -106,7 +102,7 @@ func (r *spotnodepoolsResource) Create(ctx context.Context, req resource.CreateR
 	}
 	tflog.Debug(ctx, "Creating spotnodepool", map[string]any{"name": spotNodePool.ObjectMeta.Name})
 	tflog.Trace(ctx, "Creating spotnodepool-spec", map[string]any{"spec": spotNodePool.Spec})
-	err = r.client.Create(ctx, spotNodePool)
+	err := r.client.Create(ctx, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create nodepool", err.Error())
 		return
@@ -128,8 +124,8 @@ func (r *spotnodepoolsResource) Create(ctx context.Context, req resource.CreateR
 	tflog.Debug(ctx, "Updated local state by getting remote api object", map[string]any{"name": spotNodePool.ObjectMeta.Name})
 }
 
-func (r *spotnodepoolsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data resource_spotnodepools.SpotnodepoolsModel
+func (r *spotnodepoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data resource_spotnodepool.SpotnodepoolModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -165,16 +161,14 @@ func (r *spotnodepoolsResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// TODO: Should we update the resource version here? because the resource version
-	// can only change if the resource is updated outside of terraform
 	data.ResourceVersion = types.StringValue(spotNodePool.ObjectMeta.ResourceVersion)
 	tflog.Debug(ctx, "Updating local state", map[string]any{"spec": data})
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *spotnodepoolsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state resource_spotnodepools.SpotnodepoolsModel
+func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state resource_spotnodepool.SpotnodepoolModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -193,6 +187,34 @@ func (r *spotnodepoolsResource) Update(ctx context.Context, req resource.UpdateR
 		resp.Diagnostics.Append(diags...)
 		return
 	}
+	if (plan.DesiredServerCount.IsNull() || plan.DesiredServerCount.ValueInt64() <= 0) && !autoscalingSpec.Enabled {
+		resp.Diagnostics.AddAttributeError(path.Root("desired_server_count"), "desired_server_count is required", "desired_server_count required when autoscaling is disabled")
+		return
+	}
+
+	var serverClassList ngpcv1.ServerClassList
+	err := r.client.List(ctx, &serverClassList)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to list serverclasses", err.Error())
+		return
+	}
+	var serverClassExists bool
+	for _, serverClass := range serverClassList.Items {
+		if serverClass.Name == plan.ServerClass.ValueString() {
+			serverClassExists = true
+			break
+		}
+	}
+	if !serverClassExists {
+		var serverClassNames []string
+		for _, serverClass := range serverClassList.Items {
+			//TODO: Filter serverclasses based on region in cloudspace
+			serverClassNames = append(serverClassNames, serverClass.Name)
+		}
+		resp.Diagnostics.AddError("ServerClass does not exist", fmt.Sprintf("Available serverclasses: %v", serverClassNames))
+		return
+	}
+
 	name, namespace, err := getNameAndNamespaceFromId(plan.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
@@ -245,8 +267,8 @@ func (r *spotnodepoolsResource) Update(ctx context.Context, req resource.UpdateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *spotnodepoolsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data resource_spotnodepools.SpotnodepoolsModel
+func (r *spotnodepoolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data resource_spotnodepool.SpotnodepoolModel
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -276,14 +298,14 @@ func (r *spotnodepoolsResource) Delete(ctx context.Context, req resource.DeleteR
 	tflog.Info(ctx, "Deleted spotnodepool", map[string]any{"name": name, "namespace": namespace})
 }
 
-func (r *spotnodepoolsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *spotnodepoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // convertAutoscalingValueToSpec converts the autoscaling spec from terraform type to k8s type
 func convertAutoscalingValueToSpec(
-	autoscalingValue resource_spotnodepools.AutoscalingValue) (ngpcv1.AutoscalingSpec, diag.Diagnostics) {
+	autoscalingValue resource_spotnodepool.AutoscalingValue) (ngpcv1.AutoscalingSpec, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if autoscalingValue.IsNull() {
 		// User removed block from the tf spec, hence disable autoscaling
@@ -320,13 +342,13 @@ func convertAutoscalingValueToSpec(
 // convertAutoscalingSpecToValue converts the autoscaling spec from k8s type to value in terraform type
 func convertAutoscalingSpecToValue(
 	ctx context.Context, autoscalingSpec ngpcv1.AutoscalingSpec,
-	autoscalingPlan resource_spotnodepools.AutoscalingValue) (
-	resource_spotnodepools.AutoscalingValue, diag.Diagnostics) {
+	autoscalingPlan resource_spotnodepool.AutoscalingValue) (
+	resource_spotnodepool.AutoscalingValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if autoscalingPlan.IsNull() && !autoscalingSpec.Enabled {
 		// User removed block from the tf spec, we make it null to
 		// match plan with state
-		return resource_spotnodepools.NewAutoscalingValueNull(), diags
+		return resource_spotnodepool.NewAutoscalingValueNull(), diags
 	}
 
 	var minNodes, maxNodes basetypes.Int64Value
@@ -347,8 +369,8 @@ func convertAutoscalingSpecToValue(
 	} else {
 		enabledValue = types.BoolValue(autoscalingSpec.Enabled)
 	}
-	autoscalingVal, diags := resource_spotnodepools.NewAutoscalingValue(
-		resource_spotnodepools.AutoscalingValue{}.AttributeTypes(ctx),
+	autoscalingVal, diags := resource_spotnodepool.NewAutoscalingValue(
+		resource_spotnodepool.AutoscalingValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
 			"enabled":   enabledValue,
 			"min_nodes": minNodes,

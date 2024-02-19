@@ -110,15 +110,13 @@ provider "spot" {}
 
 resource "spot_cloudspace" "my-cloudspace" {
   cloudspace_name    = "example"
-  organization       = "my-org"
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
   preemption_webhook = ""
 }
 
-resource "spot_spotnodepools" "example" {
+resource "spot_spotnodepool" "example" {
   cloudspace_name      = "example"
-  organization         = "my-org"
   server_class         = "gp.vs1.small-dfw"
   bid_price            = "0.002"
   desired_server_count = 2
@@ -137,13 +135,13 @@ Here's a brief explanation of the configuration:
 - `us-central-dfw-1` is the rackspace region where the cloudspace will be created
 - Refer to the detailed documentation on the [cloudspace resource](resources/cloudspace.md) for more configuration options.
 
-In Spot, you cant add an individual servers to the cloudspace, but you have to add a group of servers to the cloudspace, called spotnodepool. A spotnodepool is essentially a grouping of servers, and each spotnodepool consists of servers that share the same hardware specifications, such as CPU and memory configurations. This grouping allows for better organization and management of resources within your cloud environment. You can specify multiple spotnodepools in a cloudspace. All such spotnodepools will be part of same kubernetes cluster(cloudspace). All the servers in a spotnodepool will be charged at the same price, the price set by you as the value the field `bid_price`.
+In Spot, you cant add an individual servers to the cloudspace, but you have to add a group of servers to the cloudspace, called spotnodepool. A spotnodepool is essentially a grouping of servers, and each spotnodepool consists of servers that share the same hardware specifications, such as CPU and memory configurations. This grouping allows for better organization and management of resources within your cloud environment. You can specify multiple spotnodepool in a cloudspace. All such spotnodepool will be part of same kubernetes cluster(cloudspace). All the servers in a spotnodepool will be charged at the same price, the price set by you as the value the field `bid_price`.
 
 ```terraform
 terraform {
   required_providers {
     spot = {
-      source = "ngpc.rxt.io/rackerlabs/spot"
+      source = "rackerlabs/spot"
     }
   }
 }
@@ -152,15 +150,12 @@ provider "spot" {}
 
 resource "spot_cloudspace" "my-cloudspace" {
   cloudspace_name    = "example"
-  organization       = "my-org"
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
-  preemption_webhook = ""
 }
 
-resource "spot_spotnodepools" "example" {
+resource "spot_spotnodepool" "example" {
   cloudspace_name      = "example"
-  organization         = "my-org"
   server_class         = "gp.vs1.small-dfw"
   bid_price            = "0.002"
   desired_server_count = 2
@@ -172,9 +167,8 @@ A spotnodepool can be configured to dynamically adjust the number of servers bas
 ```terraform
 # Creates a spot node pool with a two servers of class gp.vs1.small-dfw and autoscaling enabled.
 # If load increases, the number of nodes will increase up to 4 from the minimum of 2.
-resource "spot_spotnodepools" "example" {
+resource "spot_spotnodepool" "example" {
   cloudspace_name      = "example"
-  organization         = "my-org"
   server_class         = "gp.vs1.small-dfw"
   bid_price            = "0.002"
   desired_server_count = 2
@@ -186,7 +180,7 @@ resource "spot_spotnodepools" "example" {
 }
 ```
 
-You can read about the various configuration options for spotnodepools [here](resources/spotnodepools.md).
+You can read about the various configuration options for spotnodepool [here](resources/spotnodepool.md).
 
 9. **Apply the Terraform configuration:**
 

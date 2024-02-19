@@ -5,7 +5,9 @@ package resource_cloudspace
 import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -28,6 +30,7 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Optional:            true,
 				Description:         "Indicates if the control plane should be highly available.",
 				MarkdownDescription: "Indicates if the control plane should be highly available.",
+				Default:             booldefault.StaticBool(false),
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -42,18 +45,11 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Description:         "The last time the cloudspace was updated.",
 				MarkdownDescription: "The last time the cloudspace was updated.",
 			},
-			"organization": schema.StringAttribute{
-				Required:            true,
-				Description:         "The organization to which the cloudspace belongs.",
-				MarkdownDescription: "The organization to which the cloudspace belongs.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
 			"preemption_webhook": schema.StringAttribute{
 				Optional:            true,
 				Description:         "Webhook URL for preemption notifications.",
 				MarkdownDescription: "Webhook URL for preemption notifications.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"region": schema.StringAttribute{
 				Required:            true,
@@ -83,7 +79,6 @@ type CloudspaceModel struct {
 	HacontrolPlane    types.Bool   `tfsdk:"hacontrol_plane"`
 	Id                types.String `tfsdk:"id"`
 	LastUpdated       types.String `tfsdk:"last_updated"`
-	Organization      types.String `tfsdk:"organization"`
 	PreemptionWebhook types.String `tfsdk:"preemption_webhook"`
 	Region            types.String `tfsdk:"region"`
 	ResourceVersion   types.String `tfsdk:"resource_version"`

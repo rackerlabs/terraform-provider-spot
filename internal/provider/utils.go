@@ -18,7 +18,8 @@ func getIDFromObjectMeta(meta metav1.ObjectMeta) string {
 	return meta.Namespace + "/" + meta.Name
 }
 
-// getNameAndNamespaceFromId returns name and namespace from id
+// getNameAndNamespaceFromId returns name and namespace from id of the
+// resource or data source stored in a state
 // id format: namespace/name
 func getNameAndNamespaceFromId(id string) (string, string, error) {
 	parts := strings.Split(id, "/")
@@ -28,9 +29,9 @@ func getNameAndNamespaceFromId(id string) (string, string, error) {
 	return parts[1], parts[0], nil
 }
 
-// findNamespaceForOrganization returns namespace for organization
+// FindNamespaceForOrganization returns namespace for organization
 // ngpc API is used to find namespace
-func findNamespaceForOrganization(ctx context.Context, client ngpc.Client, orgName string) (string, error) {
+func FindNamespaceForOrganization(ctx context.Context, client ngpc.Client, orgName string) (string, error) {
 	org, err := client.Organizer().LookupOrganizationByName(ctx, orgName)
 	if err != nil {
 		return "", err
@@ -38,7 +39,11 @@ func findNamespaceForOrganization(ctx context.Context, client ngpc.Client, orgNa
 	if org == nil {
 		return "", fmt.Errorf("organization %s not found", orgName)
 	}
-	return strings.ReplaceAll(strings.ToLower(*org.ID), "_", "-"), nil
+	return findNamespaceFromID(*org.ID), nil
+}
+
+func findNamespaceFromID(orgID string) string {
+	return strings.ReplaceAll(strings.ToLower(orgID), "_", "-")
 }
 
 // readFileUpToNBytes reads file up to n bytes to prevent reading large files
