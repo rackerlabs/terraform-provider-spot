@@ -385,5 +385,84 @@
 			}
 		}
 	],
+	"datasources": [
+		{
+			"name": "cloudspace",
+			"schema": {
+				"attributes": [
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "ID of the cloudspace"
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Name of the cloudspace"
+						}
+					},
+					{
+						"name": "region",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The region where the cloudspace resides."
+						}
+					},
+					{
+						"name": "kubeconfig",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubeconfig blob"
+						}
+					},
+					{
+						"name": "api_server_endpoint",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubernetes api server URL"
+						}
+					},
+					{
+						"name": "user",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Name of the user to use for authentication to kubernetes api server"
+						}
+					},
+					{
+						"name": "token",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Token to use for authentication to kubernetes api server"
+						}
+					},
+					{
+						"name": "health",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Health indicates if CloudSpace has a working APIServer and available nodes"
+						}
+					},
+					{
+						"name": "phase",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Phase of the cloudspace"
+						}
+					},
+					{
+						"name": "reason",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Reason contains the reason why the CloudSpace is in a certain phase."
+						}
+					}
+				]
+			}
+		}
+	],
 	"version": "0.1"
 }

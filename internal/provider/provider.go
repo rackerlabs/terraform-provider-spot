@@ -65,6 +65,12 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			return
 		}
 	}
+	// Setting token in environment variable for other workflows like kubeconfig generation
+	err := os.Setenv("RXTSPOT_TOKEN", strRxtSpotToken)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to set RXTSPOT_TOKEN in environment variable", err.Error())
+		return
+	}
 	rxtSpotToken := NewRxtSpotToken(strRxtSpotToken)
 	if err := rxtSpotToken.Parse(); err != nil {
 		resp.Diagnostics.AddError("Failed to parse token", err.Error())
@@ -125,7 +131,9 @@ func (p *spotProvider) Metadata(ctx context.Context, req provider.MetadataReques
 }
 
 func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		NewCloudspaceDataSource,
+	}
 }
 
 func (p *spotProvider) Resources(ctx context.Context) []func() resource.Resource {

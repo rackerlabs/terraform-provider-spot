@@ -34,3 +34,11 @@ resource "spot_spotnodepool" "medium-nodes" {
   bid_price            = 1.012
   desired_server_count = 2
 }
+
+data "spot_cloudspace" "my-cloudspace" {
+  id = resource.spot_cloudspace.my-cloudspace.id
+}
+
+output "kubeconfig" {
+  value = data.spot_cloudspace.my-cloudspace.kubeconfig
+}
