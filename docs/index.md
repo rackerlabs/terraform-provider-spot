@@ -116,12 +116,10 @@ resource "spot_cloudspace" "my-cloudspace" {
 }
 
 resource "spot_spotnodepool" "example" {
-  cloudspace_name      = "example"
-  server_class         = "gp.vs1.small-dfw"
-  bid_price            = "0.002"
-  desired_server_count = 2
+  cloudspace_name = "example"
+  server_class    = "gp.vs1.small-dfw"
+  bid_price       = 0.002
   autoscaling = {
-    enabled   = true
     min_nodes = 2
     max_nodes = 4
   }
@@ -131,7 +129,6 @@ resource "spot_spotnodepool" "example" {
 Here's a brief explanation of the configuration:
 
 - `example` is the name of the cloudspace
-- `my-org` is the organization under which the cloudspace will be created
 - `us-central-dfw-1` is the rackspace region where the cloudspace will be created
 - Refer to the detailed documentation on the [cloudspace resource](resources/cloudspace.md) for more configuration options.
 
@@ -152,12 +149,13 @@ resource "spot_cloudspace" "my-cloudspace" {
   cloudspace_name    = "example"
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
+  preemption_webhook = ""
 }
 
 resource "spot_spotnodepool" "example" {
   cloudspace_name      = "example"
   server_class         = "gp.vs1.small-dfw"
-  bid_price            = "0.002"
+  bid_price            = 0.002
   desired_server_count = 2
 }
 ```
@@ -168,12 +166,10 @@ A spotnodepool can be configured to dynamically adjust the number of servers bas
 # Creates a spot node pool with a two servers of class gp.vs1.small-dfw and autoscaling enabled.
 # If load increases, the number of nodes will increase up to 4 from the minimum of 2.
 resource "spot_spotnodepool" "example" {
-  cloudspace_name      = "example"
-  server_class         = "gp.vs1.small-dfw"
-  bid_price            = "0.002"
-  desired_server_count = 2
+  cloudspace_name = "example"
+  server_class    = "gp.vs1.small-dfw"
+  bid_price       = 0.002
   autoscaling = {
-    enabled   = true
     min_nodes = 2
     max_nodes = 4
   }

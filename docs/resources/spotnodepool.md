@@ -17,9 +17,8 @@ The `spotnodepool` resource is designed to manage Spot Node Pools within a speci
 resource "spot_spotnodepool" "example" {
   cloudspace_name = "example"
   server_class    = "gp.vs1.small-dfw"
-  bid_price       = "0.002"
+  bid_price       = 0.002
   autoscaling = {
-    enabled   = true
     min_nodes = 2
     max_nodes = 4
   }
@@ -31,14 +30,14 @@ resource "spot_spotnodepool" "example" {
 
 ### Required
 
-- `bid_price` (String) The bid price for the server.
+- `bid_price` (Number) The bid price for the server in USD, rounded to three decimal places.
 - `cloudspace_name` (String) The name of the cloudspace.
 - `server_class` (String) The class of servers to use for the node pool.
 
 ### Optional
 
-- `autoscaling` (Attributes) Scales the nodes in a cluster based on based on usage. This block can be omitted to disable autoscaling. (see [below for nested schema](#nestedatt--autoscaling))
-- `desired_server_count` (Number) The desired number of servers in the node pool.
+- `autoscaling` (Attributes) Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling. (see [below for nested schema](#nestedatt--autoscaling))
+- `desired_server_count` (Number) The desired number of servers in the node pool. Should be removed if autoscaling is enabled.
 
 ### Read-Only
 
@@ -51,7 +50,6 @@ resource "spot_spotnodepool" "example" {
 
 Optional:
 
-- `enabled` (Boolean) Indicates if autoscaling is enabled.
 - `max_nodes` (Number) The maximum number of nodes in the node pool.
 - `min_nodes` (Number) The minimum number of nodes in the node pool.
 

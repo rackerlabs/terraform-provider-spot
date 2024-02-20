@@ -32,7 +32,7 @@ resource "spot_cloudspace" "example" {
 
 ### Optional
 
-- `hacontrol_plane` (Boolean) Indicates if the control plane should be highly available.
+- `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
 
 ### Read-Only

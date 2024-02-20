@@ -5,13 +5,21 @@ package resource_spotnodepool
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/rackerlabs/terraform-provider-spot/internal/spotvalidator"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -22,20 +30,22 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"autoscaling": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Optional:            true,
-						Description:         "Indicates if autoscaling is enabled.",
-						MarkdownDescription: "Indicates if autoscaling is enabled.",
-					},
 					"max_nodes": schema.Int64Attribute{
 						Optional:            true,
 						Description:         "The maximum number of nodes in the node pool.",
 						MarkdownDescription: "The maximum number of nodes in the node pool.",
+						Validators: []validator.Int64{
+							int64validator.AtLeast(1),
+							int64validator.AtLeastSumOf(path.MatchRelative().AtParent().AtName("min_nodes")),
+						},
 					},
 					"min_nodes": schema.Int64Attribute{
 						Optional:            true,
 						Description:         "The minimum number of nodes in the node pool.",
 						MarkdownDescription: "The minimum number of nodes in the node pool.",
+						Validators: []validator.Int64{
+							int64validator.AtLeast(1),
+						},
 					},
 				},
 				CustomType: AutoscalingType{
@@ -44,13 +54,20 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Description:         "Scales the nodes in a cluster based on based on usage. This block can be omitted to disable autoscaling.",
-				MarkdownDescription: "Scales the nodes in a cluster based on based on usage. This block can be omitted to disable autoscaling.",
+				Description:         "Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling.",
+				MarkdownDescription: "Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling.",
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("max_nodes"), path.MatchRelative().AtName("min_nodes")),
+				},
 			},
-			"bid_price": schema.StringAttribute{
+			"bid_price": schema.Float64Attribute{
 				Required:            true,
-				Description:         "The bid price for the server.",
-				MarkdownDescription: "The bid price for the server.",
+				Description:         "The bid price for the server in USD, rounded to three decimal places.",
+				MarkdownDescription: "The bid price for the server in USD, rounded to three decimal places.",
+				Validators: []validator.Float64{
+					float64validator.AtLeast(0.001),
+					spotvalidator.DecimalDigitsAtMost(3),
+				},
 			},
 			"cloudspace_name": schema.StringAttribute{
 				Required:            true,
@@ -59,12 +76,20 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be valid kubernetes name"),
+				},
 			},
 			"desired_server_count": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The desired number of servers in the node pool. Ignored if autoscaling is enabled.",
-				MarkdownDescription: "The desired number of servers in the node pool. Ignored if autoscaling is enabled.",
+				Description:         "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
+				MarkdownDescription: "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+					int64validator.ConflictsWith(path.MatchRelative().AtParent().AtName("autoscaling")),
+				},
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -98,7 +123,7 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 
 type SpotnodepoolModel struct {
 	Autoscaling        AutoscalingValue `tfsdk:"autoscaling"`
-	BidPrice           types.String     `tfsdk:"bid_price"`
+	BidPrice           types.Float64    `tfsdk:"bid_price"`
 	CloudspaceName     types.String     `tfsdk:"cloudspace_name"`
 	DesiredServerCount types.Int64      `tfsdk:"desired_server_count"`
 	Id                 types.String     `tfsdk:"id"`
@@ -131,24 +156,6 @@ func (t AutoscalingType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
-
-	enabledAttribute, ok := attributes["enabled"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`enabled is missing from object`)
-
-		return nil, diags
-	}
-
-	enabledVal, ok := enabledAttribute.(basetypes.BoolValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`enabled expected to be basetypes.BoolValue, was: %T`, enabledAttribute))
-	}
 
 	maxNodesAttribute, ok := attributes["max_nodes"]
 
@@ -191,7 +198,6 @@ func (t AutoscalingType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	}
 
 	return AutoscalingValue{
-		Enabled:  enabledVal,
 		MaxNodes: maxNodesVal,
 		MinNodes: minNodesVal,
 		state:    attr.ValueStateKnown,
@@ -261,24 +267,6 @@ func NewAutoscalingValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewAutoscalingValueUnknown(), diags
 	}
 
-	enabledAttribute, ok := attributes["enabled"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`enabled is missing from object`)
-
-		return NewAutoscalingValueUnknown(), diags
-	}
-
-	enabledVal, ok := enabledAttribute.(basetypes.BoolValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`enabled expected to be basetypes.BoolValue, was: %T`, enabledAttribute))
-	}
-
 	maxNodesAttribute, ok := attributes["max_nodes"]
 
 	if !ok {
@@ -320,7 +308,6 @@ func NewAutoscalingValue(attributeTypes map[string]attr.Type, attributes map[str
 	}
 
 	return AutoscalingValue{
-		Enabled:  enabledVal,
 		MaxNodes: maxNodesVal,
 		MinNodes: minNodesVal,
 		state:    attr.ValueStateKnown,
@@ -395,19 +382,17 @@ func (t AutoscalingType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = AutoscalingValue{}
 
 type AutoscalingValue struct {
-	Enabled  basetypes.BoolValue  `tfsdk:"enabled"`
 	MaxNodes basetypes.Int64Value `tfsdk:"max_nodes"`
 	MinNodes basetypes.Int64Value `tfsdk:"min_nodes"`
 	state    attr.ValueState
 }
 
 func (v AutoscalingValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 3)
+	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["enabled"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["max_nodes"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["min_nodes"] = basetypes.Int64Type{}.TerraformType(ctx)
 
@@ -415,15 +400,7 @@ func (v AutoscalingValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 3)
-
-		val, err = v.Enabled.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["enabled"] = val
+		vals := make(map[string]tftypes.Value, 2)
 
 		val, err = v.MaxNodes.ToTerraformValue(ctx)
 
@@ -472,12 +449,10 @@ func (v AutoscalingValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 
 	objVal, diags := types.ObjectValue(
 		map[string]attr.Type{
-			"enabled":   basetypes.BoolType{},
 			"max_nodes": basetypes.Int64Type{},
 			"min_nodes": basetypes.Int64Type{},
 		},
 		map[string]attr.Value{
-			"enabled":   v.Enabled,
 			"max_nodes": v.MaxNodes,
 			"min_nodes": v.MinNodes,
 		})
@@ -498,10 +473,6 @@ func (v AutoscalingValue) Equal(o attr.Value) bool {
 
 	if v.state != attr.ValueStateKnown {
 		return true
-	}
-
-	if !v.Enabled.Equal(other.Enabled) {
-		return false
 	}
 
 	if !v.MaxNodes.Equal(other.MaxNodes) {
@@ -525,7 +496,6 @@ func (v AutoscalingValue) Type(ctx context.Context) attr.Type {
 
 func (v AutoscalingValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"enabled":   basetypes.BoolType{},
 		"max_nodes": basetypes.Int64Type{},
 		"min_nodes": basetypes.Int64Type{},
 	}

@@ -3,9 +3,7 @@ package provider
 import (
 	"context"
 	"os"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -52,8 +50,8 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		tflog.Info(ctx, "Using provided ngpc api server", map[string]any{"ngpcAPIServer": ngpcAPIServer})
 	}
 
-	rxtSpotToken := os.Getenv("RXTSPOT_TOKEN")
-	if rxtSpotToken == "" {
+	strRxtSpotToken := os.Getenv("RXTSPOT_TOKEN")
+	if strRxtSpotToken == "" {
 		rxtSpotTokenFile, found := os.LookupEnv("RXTSPOT_TOKEN_FILE")
 		if !found {
 			resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable")
@@ -61,46 +59,57 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		}
 		tflog.Debug(ctx, "Reading authentication token from file", map[string]any{"rxtSpotTokenFile": rxtSpotTokenFile})
 		var err error
-		rxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
+		strRxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to read authentication token from file", err.Error())
 			return
 		}
 	}
-	var claims jwt.MapClaims
-	_, _, err := jwt.NewParser(jwt.WithExpirationRequired()).ParseUnverified(rxtSpotToken, &claims)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse jwt token", err.Error())
-		return
-	}
-	if exp, err := claims.GetExpirationTime(); err != nil {
-		resp.Diagnostics.AddError("Failed to get expiration time from jwt token", err.Error())
-		return
-	} else {
-		if exp.Time.Before(time.Now().UTC()) {
-			resp.Diagnostics.AddError("Token has expired", "token has expired")
-			return
-		}
-	}
-	if val, found := claims["org_id"]; found {
-		tflog.Debug(ctx, "Found org_id in jwt token", map[string]any{"org_id": val})
-		if orgID, ok := val.(string); ok {
-			orgNamespace := findNamespaceFromID(orgID)
-			tflog.Debug(ctx, "Setting org_id in environment variable RXTSPOT_ORG_NS", map[string]any{"org_id": orgID, "orgNamespace": orgNamespace})
-			if err = os.Setenv("RXTSPOT_ORG_NS", orgNamespace); err != nil {
-				resp.Diagnostics.AddError("Failed to set org_id in environment", err.Error())
-				return
-			}
-		} else {
-			resp.Diagnostics.AddError("Failed to get org_id from jwt token", "org_id is not a string")
-			return
-		}
-	} else {
-		resp.Diagnostics.AddError("Failed to get org_id claim from jwt token", "org_id not found in jwt token")
+	rxtSpotToken := NewRxtSpotToken(strRxtSpotToken)
+	if err := rxtSpotToken.Parse(); err != nil {
+		resp.Diagnostics.AddError("Failed to parse token", err.Error())
 		return
 	}
 
-	cfg := ngpc.NewConfig(ngpcAPIServer, rxtSpotToken, p.Version == "dev")
+	expired, err := rxtSpotToken.IsExpired()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to check if token is expired", err.Error())
+		return
+	}
+	if expired {
+		resp.Diagnostics.AddError("Token is expired", "Please use a valid token")
+		return
+	}
+
+	if !rxtSpotToken.IsEmailVerified() {
+		resp.Diagnostics.AddError("Email is not verified", "Please verify your email to use Spot services")
+		return
+	}
+
+	isValidSignature, err := rxtSpotToken.IsValidSignature()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to check if token has valid signature", err.Error())
+		return
+	}
+	if !isValidSignature {
+		resp.Diagnostics.AddError("Token has invalid signature", "Please use a valid token")
+		return
+	}
+	orgID, err := rxtSpotToken.GetOrgID()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get org_id from authentication token", err.Error())
+		return
+	}
+	orgNamespace := findNamespaceFromID(orgID)
+	tflog.Debug(ctx, "Setting org_id in environment variable RXTSPOT_ORG_NS", map[string]any{"org_id": orgID, "orgNamespace": orgNamespace})
+	if err = os.Setenv("RXTSPOT_ORG_NS", orgNamespace); err != nil {
+		resp.Diagnostics.AddError("Failed to set org_id in environment variable RXTSPOT_ORG_NS", err.Error())
+		return
+	}
+
+	tflog.Info(ctx, "Token verified successfully", map[string]any{"org_id": orgID, "orgNamespace": orgNamespace})
+	tflog.Debug(ctx, "Creating ngpc client", map[string]any{"ngpcAPIServer": ngpcAPIServer})
+	cfg := ngpc.NewConfig(ngpcAPIServer, strRxtSpotToken, p.Version == "dev")
 	ngpcClient, err := ngpc.CreateClientForConfig(cfg)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())

@@ -7,10 +7,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -25,11 +25,16 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
+				},
 			},
 			"hacontrol_plane": schema.BoolAttribute{
 				Optional:            true,
-				Description:         "Indicates if the control plane should be highly available.",
-				MarkdownDescription: "Indicates if the control plane should be highly available.",
+				Computed:            true,
+				Description:         "High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.",
+				MarkdownDescription: "High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"id": schema.StringAttribute{
@@ -49,7 +54,10 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Optional:            true,
 				Description:         "Webhook URL for preemption notifications.",
 				MarkdownDescription: "Webhook URL for preemption notifications.",
-				Default:             stringdefault.StaticString(""),
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 255),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^http(s)?://.+`), "Must be a valid URL"),
+				},
 			},
 			"region": schema.StringAttribute{
 				Required:            true,
@@ -57,12 +65,6 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The region where the cloudspace will be created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.OneOf(
-						"us-central-dfw-1",
-						"us-east-iad-1",
-					),
 				},
 			},
 			"resource_version": schema.StringAttribute{
