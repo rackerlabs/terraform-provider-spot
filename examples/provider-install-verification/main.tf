@@ -1,11 +1,10 @@
 terraform {
   required_providers {
     spot = {
-      source = "ngpc.rxt.io/rackerlabs/spot"
+      source = "rackerlabs/spot"
     }
   }
 }
 
+# Set the environemnt variable RXTSPOT_TOKEN to your Spot API token
 provider "spot" {}
-
-resource "spot_cloudspaces" "example" {}

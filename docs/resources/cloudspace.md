@@ -16,7 +16,6 @@ Provides a Rackspace Spot Cloudspace resource. This can be used to create, modif
 # Example of cloudspace resource.
 resource "spot_cloudspace" "example" {
   cloudspace_name    = "example"
-  organization       = "my-org"
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
   preemption_webhook = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
@@ -29,12 +28,11 @@ resource "spot_cloudspace" "example" {
 ### Required
 
 - `cloudspace_name` (String) The name of the cloudspace.
-- `organization` (String) The organization to which the cloudspace belongs.
 - `region` (String) The region where the cloudspace will be created.
 
 ### Optional
 
-- `hacontrol_plane` (Boolean) Indicates if the control plane should be highly available.
+- `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
 
 ### Read-Only
@@ -57,5 +55,5 @@ Import is supported using the following syntax:
 ```shell
 # Cloudspace can be imported by specifying its id.
 # The id is the organization id(namespace) followed by a slash, followed by the name of the cloudspace.
-terraform import spot_spotnodepools.example org-yxrstzzs6qqokjva/example
+terraform import spot_spotnodepool.example org-yxrstzzs6qqokjva/example
 ```

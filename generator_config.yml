@@ -17,7 +17,7 @@ resources:
       path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/cloudspaces/{name}
       method: DELETE
 
-  spotnodepools:
+  spotnodepool:
     create:
       path: /apis/ngpc.rxt.io/v1/namespaces/{namespace}/spotnodepools
       method: POST

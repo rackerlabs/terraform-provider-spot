@@ -41,6 +41,14 @@ export RXTSPOT_TOKEN_FILE=/path/to/token/file
 6. **Create your first Cloudspace**
 
     ```terraform
+    terraform {
+      required_providers {
+         spot = {
+            source = "rackerlabs/spot"
+         }
+      }
+   }
+
     # Provider does not require any additional configuration 
     # except the RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable
     provider "spot" {}
@@ -48,21 +56,17 @@ export RXTSPOT_TOKEN_FILE=/path/to/token/file
     # Example of cloudspace resource.
     resource "spot_cloudspace" "example" {
       cloudspace_name    = "example"
-      organization       = "my-org"
       region             = "us-central-dfw-1"
       hacontrol_plane    = false
       preemption_webhook = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
     }
 
     # Creates a spot node pool with a two servers of class gp.vs1.small-dfw.
-    resource "spot_spotnodepools" "example" {
+    resource "spot_spotnodepool" "example" {
       cloudspace_name      = "example"
-      organization         = "my-org"
       server_class         = "gp.vs1.small-dfw"
-      bid_price            = "0.002"
-      desired_server_count = 2
+      bid_price            = 0.002
       autoscaling = {
-        enabled   = true
         min_nodes = 2
         max_nodes = 4
       }

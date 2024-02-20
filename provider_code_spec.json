@@ -59,40 +59,7 @@
 										"schema_definition": "stringplanmodifier.RequiresReplace()"
 									}
 								}
-							]
-						}
-					},
-					{
-						"name": "organization",
-						"string": {
-							"computed_optional_required": "required",
-							"description": "The organization to which the cloudspace belongs.",
-							"plan_modifiers": [
-								{
-									"custom": {
-										"imports": [
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-											}
-										],
-										"schema_definition": "stringplanmodifier.RequiresReplace()"
-									}
-								}
-							]
-						}
-					},
-					{
-						"name": "hacontrol_plane",
-						"bool": {
-							"computed_optional_required": "optional",
-							"description": "Indicates if the control plane should be highly available."
-						}
-					},
-					{
-						"name": "region",
-						"string": {
-							"computed_optional_required": "required",
-							"description": "The region where the cloudspace will be created.",
+							],
 							"validators": [
 								{
 									"custom": {
@@ -101,10 +68,40 @@
 												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 											}
 										],
-										"schema_definition": "stringvalidator.OneOf(\n\"us-central-dfw-1\",\n\"us-east-iad-1\",\n)"
+										"schema_definition": "stringvalidator.LengthBetween(1, 63)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be a valid kubernetes name\")"
 									}
 								}
-							],
+							]
+						}
+					},
+					{
+						"name": "hacontrol_plane",
+						"bool": {
+							"default": {
+								"static": false
+							},
+							"computed_optional_required": "computed_optional",
+							"description": "High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads."
+						}
+					},
+					{
+						"name": "region",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The region where the cloudspace will be created.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -123,14 +120,39 @@
 						"name": "preemption_webhook",
 						"string": {
 							"computed_optional_required": "optional",
-							"description": "Webhook URL for preemption notifications."
+							"description": "Webhook URL for preemption notifications.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 255)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^http(s)?://.+`), \"Must be a valid URL\")"
+									}
+								}
+							]
 						}
 					}
 				]
 			}
 		},
 		{
-			"name": "spotnodepools",
+			"name": "spotnodepool",
 			"schema": {
 				"attributes": [
 					{
@@ -156,7 +178,7 @@
 						"name": "last_updated",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The last time the spotnodepools was updated."
+							"description": "The last time the spotnodepool was updated."
 						}
 					},
 					{
@@ -164,25 +186,6 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform."
-						}
-					},
-					{
-						"name": "organization",
-						"string": {
-							"computed_optional_required": "required",
-							"description": "The organization to which the cloudspace belongs.",
-							"plan_modifiers": [
-								{
-									"custom": {
-										"imports": [
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-											}
-										],
-										"schema_definition": "stringplanmodifier.RequiresReplace()"
-									}
-								}
-							]
 						}
 					},
 					{
@@ -199,6 +202,31 @@
 											}
 										],
 										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							],
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 63)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be valid kubernetes name\")"
 									}
 								}
 							]
@@ -226,15 +254,62 @@
 					{
 						"name": "desired_server_count",
 						"int64": {
-							"computed_optional_required": "required",
-							"description": "The desired number of servers in the node pool."
+							"computed_optional_required": "computed_optional",
+							"description": "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+											}
+										],
+										"schema_definition": "int64validator.AtLeast(1)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/path"
+											}
+										],
+										"schema_definition": "int64validator.ConflictsWith(path.MatchRelative().AtParent().AtName(\"autoscaling\"))"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "bid_price",
-						"string": {
+						"float64": {
 							"computed_optional_required": "required",
-							"description": "The bid price for the server."
+							"description": "The bid price for the server in USD, rounded to three decimal places.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+											}
+										],
+										"schema_definition": "float64validator.AtLeast(0.001)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/rackerlabs/terraform-provider-spot/internal/spotvalidator"
+											}
+										],
+										"schema_definition": "spotvalidator.DecimalDigitsAtMost(3)"
+									}
+								}
+							]
 						}
 					},
 					{
@@ -243,28 +318,146 @@
 							"computed_optional_required": "optional",
 							"attributes": [
 								{
-									"name": "enabled",
-									"bool": {
-										"computed_optional_required": "optional",
-										"description": "Indicates if autoscaling is enabled."
-									}
-								},
-								{
 									"name": "max_nodes",
 									"int64": {
 										"computed_optional_required": "optional",
-										"description": "The maximum number of nodes in the node pool."
+										"description": "The maximum number of nodes in the node pool.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+														}
+													],
+													"schema_definition": "int64validator.AtLeast(1)"
+												}
+											},
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+														}
+													],
+													"schema_definition": "int64validator.AtLeastSumOf(path.MatchRelative().AtParent().AtName(\"min_nodes\"))"
+												}
+											}
+										]
 									}
 								},
 								{
 									"name": "min_nodes",
 									"int64": {
 										"computed_optional_required": "optional",
-										"description": "The minimum number of nodes in the node pool."
+										"description": "The minimum number of nodes in the node pool.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+														}
+													],
+													"schema_definition": "int64validator.AtLeast(1)"
+												}
+											}
+										]
 									}
 								}
 							],
-							"description": "Scales the nodes in a cluster based on based on usage."
+							"description": "Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling.",
+							"validators" :[
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+											}
+										],
+										"schema_definition": "objectvalidator.AlsoRequires(path.MatchRelative().AtName(\"max_nodes\"), path.MatchRelative().AtName(\"min_nodes\"))"
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		}
+	],
+	"datasources": [
+		{
+			"name": "cloudspace",
+			"schema": {
+				"attributes": [
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "ID of the cloudspace"
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Name of the cloudspace"
+						}
+					},
+					{
+						"name": "region",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The region where the cloudspace resides."
+						}
+					},
+					{
+						"name": "kubeconfig",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubeconfig blob"
+						}
+					},
+					{
+						"name": "api_server_endpoint",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubernetes api server URL"
+						}
+					},
+					{
+						"name": "user",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Name of the user to use for authentication to kubernetes api server"
+						}
+					},
+					{
+						"name": "token",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Token to use for authentication to kubernetes api server"
+						}
+					},
+					{
+						"name": "health",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Health indicates if CloudSpace has a working APIServer and available nodes"
+						}
+					},
+					{
+						"name": "phase",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Phase of the cloudspace"
+						}
+					},
+					{
+						"name": "reason",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Reason contains the reason why the CloudSpace is in a certain phase."
 						}
 					}
 				]

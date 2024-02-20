@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
@@ -22,6 +23,9 @@ import (
 var _ resource.Resource = (*cloudspaceResource)(nil)
 var _ resource.ResourceWithConfigure = (*cloudspaceResource)(nil)
 var _ resource.ResourceWithImportState = (*cloudspaceResource)(nil)
+
+// TODO: Implement ResourceWithConfigValidators for region validation
+// var _ resource.ResourceWithConfigValidators = (*cloudspaceResource)(nil)
 
 func NewCloudspaceResource() resource.Resource {
 	return &cloudspaceResource{}
@@ -66,14 +70,34 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	orgName := data.Organization.ValueString()
-	tflog.Debug(ctx, "Getting namespace associated with organization", map[string]any{"name": orgName})
-	namespace, err := findNamespaceForOrganization(ctx, r.client, orgName)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to find namespace for organization", err.Error())
+	namespace := os.Getenv("RXTSPOT_ORG_NS")
+	if namespace == "" {
+		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
 		return
 	}
-	tflog.Debug(ctx, "Got namespace associated with organization", map[string]any{"namespace": namespace})
+	tflog.Debug(ctx, "Using namespace from environment", map[string]any{"namespace": namespace})
+
+	regionsList := ngpcv1.RegionList{}
+	err := r.client.List(ctx, &regionsList)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get regions", err.Error())
+		return
+	}
+	var validRegion bool
+	for _, region := range regionsList.Items {
+		if region.Name == data.Region.ValueString() {
+			validRegion = true
+			break
+		}
+	}
+	if !validRegion {
+		regionNames := make([]string, len(regionsList.Items))
+		for i, region := range regionsList.Items {
+			regionNames[i] = region.Name
+		}
+		resp.Diagnostics.AddAttributeError(path.Root("region"), "Invalid region", fmt.Sprintf("Allowed values are: %v", regionNames))
+		return
+	}
 
 	cloudspace := &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{
@@ -92,7 +116,6 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		},
 	}
 	tflog.Info(ctx, "Creating cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
-	tflog.Trace(ctx, "Creating cloudspace", map[string]any{"req": cloudspace})
 	err = r.client.Create(ctx, cloudspace)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create cloudspace", err.Error())
@@ -102,7 +125,13 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
 	data.Region = types.StringValue(cloudspace.Spec.Region)
 	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	if cloudspace.Spec.Webhook != "" {
+		// even if we dont set string value it becomes "" by default
+		// assume it as Null if it is not set
+		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	} else {
+		data.PreemptionWebhook = types.StringNull()
+	}
 	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
 	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
@@ -131,8 +160,6 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 	tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
-
-	tflog.Trace(ctx, "Getting cloudspace", map[string]any{"id": data.Id.ValueString()})
 	cloudspace := &ngpcv1.CloudSpace{}
 	err = r.client.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
@@ -142,15 +169,18 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 		resp.Diagnostics.AddError("Failed to get cloudspace", err.Error())
 		return
 	}
-	tflog.Trace(ctx, "Got cloudspace", map[string]any{"cloudspace": cloudspace})
 
 	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
 	data.Region = types.StringValue(cloudspace.Spec.Region)
 	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	if cloudspace.Spec.Webhook != "" {
+		// even if we dont set string value it becomes "" by default
+		// assume it as Null if it is not set
+		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	} else {
+		data.PreemptionWebhook = types.StringNull()
+	}
 	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
-	// TODO: Should we update the resource version here? because the resource version
-	// can only change if the resource is updated outside of terraform
 	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
 
 	// Save updated data into Terraform state
@@ -178,7 +208,7 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
 
-	// TODO: Find the difference between curData and data and update only the changed fields using patch
+	// TODO: Find the difference between state and plan and update only the changed fields using patch
 	cloudspace := &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CloudSpace",
@@ -197,7 +227,6 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 		},
 	}
 	tflog.Debug(ctx, "Updating cloudspace", map[string]any{"name": name})
-	tflog.Trace(ctx, "Updating cloudspace", map[string]any{"req": data})
 	err = r.client.Update(ctx, cloudspace)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update cloudspace", err.Error())
@@ -209,7 +238,13 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
 	data.Region = types.StringValue(cloudspace.Spec.Region)
 	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	if cloudspace.Spec.Webhook != "" {
+		// even if we dont set string value it becomes "" by default
+		// assume it as Null if it is not set
+		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	} else {
+		data.PreemptionWebhook = types.StringNull()
+	}
 	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
 	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
