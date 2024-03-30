@@ -128,25 +128,25 @@ type KubeconfigVars struct {
 
 const kubeconfigTemplate = `apiVersion: v1
 clusters:
-- cluster:
-	insecure-skip-tls-verify: {{.InsecureSkipTLSVerify}}
-	server: >-
-	https://{{.Server}}/
-name: {{.Cluster}}
+  - cluster:
+      insecure-skip-tls-verify: {{.InsecureSkipTLSVerify}}
+      server: >-
+        https://{{.Server}}/
+    name: {{.Cluster}}
 contexts:
-- context:
-	cluster: {{.Cluster}}
-	namespace: default
-	user: {{.User}}
-name: {{.OrgName}}-{{.Cluster}}
+  - context:
+      cluster: {{.Cluster}}
+      namespace: default
+      user: {{.User}}
+    name: {{.OrgName}}-{{.Cluster}}
 current-context: {{.OrgName}}-{{.Cluster}}
 kind: Config
 preferences: {}
 users:
-- name: {{.User}}
-user:
-	token: >-
-	{{.Token}}
+  - name: {{.User}}
+    user:
+      token: >-
+        {{.Token}}
 `
 
 func createKubeconfig(kubeconfigVars KubeconfigVars) (string, error) {
