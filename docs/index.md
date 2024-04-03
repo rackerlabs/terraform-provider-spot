@@ -10,6 +10,8 @@ description: |-
 
 The Rackspace Spot Provider is a solution for creating and managing multiple cloudspaces, on Rackspace's robust infrastructure.
 
+Rackspace Spot delivers fully managed and pre-configured Kubernetes clusters, known as cloudspaces, providing a turnkey solution for deploying and running containerized applications.
+
 ## Authenticating with Rackspace Spot
 
 To use this provider, set an authentication token as an environment variable, obtainable via the Rackspace Spot dashboard, https://spot.rackspace.com.
@@ -43,115 +45,88 @@ provider "spot" {}
 
 ## Create Your First Cloudspace
 
-Get started with Rackspace Spot by creating your first Spot Cloudspace.
+Get started with Rackspace Spot by creating your first Spot Cloudspace. Follow the steps below to create a cloudspace and deploy your workloads.
 
-A Cloudspace represents a logical unit of your cloud infrastructure. It includes:
-
- - An infrastructure pool comprising servers, storage and network.
- - A cloud operating system, Kubernetes
-
-1. **Log in to the [Rackspace Spot Console](https://spot.rackspace.com):**
-   - If you don't have an account, sign up for one.
-   - Log in with your credentials or SSO.
-   - Setup the payment method.
-
-2. **Select an Organization:**
-   - If you haven't created an organization, create one by following the instructions.
-
-3. **Access the Spot Dashboard:**
-   - After creating or selecting an organization, you should land on the Spot dashboard.
-
-4. **Get the Access Token:**
+1. Log in to the [Rackspace Spot Console](https://spot.rackspace.com) and copy the Access Token:
    - Navigate to the **Terraform** menu under **API Access** on the left pane.
    - Copy the **Access Token** provided on that page.
    - **Important:** Treat the access token as sensitive information. Avoid sharing it publicly.
 
-5. **Set the copied token as an environment variable:**
+2. Set the copied token as an environment variable:
 
-     ```bash
-     echo "<your_access_token>" > ~/.rxtspot_token
-     export RXTSPOT_TOKEN_FILE=$HOME/.rxtspot_token
-     ```
+   ```bash
+   echo "<your_access_token>" > ~/.rxtspot_token
+   export RXTSPOT_TOKEN_FILE=$HOME/.rxtspot_token
+   ```
 
-6. **Create your Terraform configuration file**
-
-```terraform
-terraform {
-  required_providers {
-    spot = {
-      source = "rackerlabs/spot"
-    }
-  }
-}
-
-# Provider does not require any additional configuration 
-# except the RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable
-provider "spot" {}
-```
-
-7. **Initialize the Terraform configuration:**
-
-     ```bash
-     terraform init
-     ```
-
-8. **Configure the Cloudspace:**
+3. Create your terraform configuration file
 
 ```terraform
 terraform {
   required_providers {
     spot = {
       source = "rackerlabs/spot"
+      version = "0.0.3"
     }
   }
 }
 
 provider "spot" {}
 
-resource "spot_cloudspace" "my-cloudspace" {
-  cloudspace_name    = "example"
+# Example of cloudspace resource.
+resource "spot_cloudspace" "example" {
+  cloudspace_name    = "name your cloudspace"
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
-  preemption_webhook = ""
+  preemption_webhook = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
 }
 
-resource "spot_spotnodepool" "example" {
-  cloudspace_name = "example"
-  server_class    = "gp.vs1.small-dfw"
-  bid_price       = 0.002
+# Creates a spot node pool with two servers of class gp.vs1.medium-dfw.
+resource "spot_spotnodepool" "non-autoscaling-bid" {
+  cloudspace_name      = resource.spot_cloudspace.example.cloudspace_name
+  server_class         = "gp.vs1.medium-dfw"
+  bid_price            = 0.008
+  desired_server_count = 2
+}
+
+# Creates a spot node pool with an autoscaling pool of 3-8 servers of class gp.vs1.large-dfw.
+resource "spot_spotnodepool" "autoscaling-bid" {
+  cloudspace_name      = resource.spot_cloudspace.example.cloudspace_name
+  server_class         = "gp.vs1.large-dfw"
+  bid_price            = 0.012
+
   autoscaling = {
-    min_nodes = 2
-    max_nodes = 4
+    min_nodes = 3
+    max_nodes = 8
   }
+}
+
+data "spot_cloudspace" "example" {
+  id = resource.spot_cloudspace.example.id
+}
+
+output "kubeconfig" {
+  value = data.spot_cloudspace.my-cloudspace.kubeconfig
 }
 ```
 
-Here's a brief explanation of the configuration:
+4. Use generated kubeconfig to access your cloudspace.
+   - The cloudspace phase must be healthy
 
-- `example` is the name of the cloudspace
-- `us-central-dfw-1` is the rackspace region where the cloudspace will be created
-- Refer to the detailed documentation on the [cloudspace resource](resources/cloudspace.md) for more configuration options.
+## Know your Cloudspace
 
-In Spot, you cant add an individual servers to the cloudspace, but you have to add a group of servers to the cloudspace, called spotnodepool. A spotnodepool is essentially a grouping of servers, and each spotnodepool consists of servers that share the same hardware specifications, such as CPU and memory configurations. This grouping allows for better organization and management of resources within your cloud environment. You can specify multiple spotnodepool in a cloudspace. All such spotnodepool will be part of same kubernetes cluster(cloudspace). All the servers in a spotnodepool will be charged at the same price, the price set by you as the value the field `bid_price`.
+A Cloudspace represents a logical unit of your cloud infrastructure. It includes:
+
+- An infrastructure pool comprising servers, storage and network. Rackspace Spot uses spare virtual server capacity from Rackspace's global data-centers as the backing infrastructure
+- A cloud operating system such as Kubernetes
+
+Learn more about Cloudspaces [here](https://spot.rackspace.com/docs/create-rackspace-spot-cloudspace).
+
+### Spotnodepool
+
+A spotnodepool is a pool of nodes in a Spot cloudspace. In Spot, you organize your servers into groups called spotnodepools, which you add to your cloudspace. A spotnodepool is a collection of servers with identical specifications. You can define multiple spotnodepools within a single cloudspace, and all these server groups will be part of the same Kubernetes cluster associated with that cloudspace. The servers in a spotnodepool become worker nodes, in terms of Kubernetes cluster terminology.
 
 ```terraform
-terraform {
-  required_providers {
-    spot = {
-      source = "rackerlabs/spot"
-    }
-  }
-}
-
-provider "spot" {}
-
-resource "spot_cloudspace" "my-cloudspace" {
-  cloudspace_name    = "example"
-  region             = "us-central-dfw-1"
-  hacontrol_plane    = false
-  preemption_webhook = ""
-}
-
 resource "spot_spotnodepool" "example" {
   cloudspace_name      = "example"
   server_class         = "gp.vs1.small-dfw"
@@ -160,7 +135,9 @@ resource "spot_spotnodepool" "example" {
 }
 ```
 
-A spotnodepool can be configured to dynamically adjust the number of servers based on demand. This is known as autoscaling. When demand is high, the spotnodepool can automatically increase the number of servers, and when demand decreases, it can scale down to optimize costs. You can specify the minimum and maximum number of servers in the spotnodepool, and the spotnodepool will automatically scale up or down based on the load. 
+### Spotnodepool with Autoscaling
+
+A spotnodepool can be configured to dynamically adjust the number of servers based on demand. This is known as autoscaling. When demand is high, the spotnodepool can automatically increase the number of servers, and when demand decreases, it can scale down to optimize costs. You can specify the minimum and maximum number of servers in the spotnodepool, and the spotnodepool will automatically scale up or down based on the load.
 
 ```terraform
 # Creates a spot node pool with a two servers of class gp.vs1.small-dfw and autoscaling enabled.
@@ -175,15 +152,3 @@ resource "spot_spotnodepool" "example" {
   }
 }
 ```
-
-You can read about the various configuration options for spotnodepool [here](resources/spotnodepool.md).
-
-9. **Apply the Terraform configuration:**
-
-     ```bash
-      terraform apply
-      ```
-
-10. **Use the Cloudspace:**
-    - Navigate to the **Rackspace Spot** dashboard
-    -  Download the kubeconfig file and use `kubectl apply` to deploy your workloads
