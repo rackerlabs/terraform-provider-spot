@@ -24,12 +24,15 @@ export RXTSPOT_TOKEN=<rackspace-spot-token>
 # or
 export RXTSPOT_TOKEN_FILE=/path/to/token/file
 ```
+You can set the token directly in the provider configuration as shown below. However, it is recommended to use Terraform variables instead of hard-coding the token in your Terraform configuration files. This approach prevents accidental exposure of the token in version control.
 
 ## Example Usage
 
 Declare the provider in your configuration and terraform init will automatically fetch and install the provider for you from the Terraform Registry:
 
 {{ tffile .ExampleFile }}
+
+{{ .SchemaMarkdown | trimspace }}
 
 ## Create Your First Cloudspace
 

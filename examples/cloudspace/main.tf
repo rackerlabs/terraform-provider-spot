@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     spot = {
-      source = "rackerlabs/spot"
+      source  = "rackerlabs/spot"
       version = "0.0.3"
     }
   }
@@ -27,9 +27,9 @@ resource "spot_spotnodepool" "non-autoscaling-bid" {
 
 # Creates a spot node pool with an autoscaling pool of 3-8 servers of class gp.vs1.large-dfw.
 resource "spot_spotnodepool" "autoscaling-bid" {
-  cloudspace_name      = resource.spot_cloudspace.example.cloudspace_name
-  server_class         = "gp.vs1.large-dfw"
-  bid_price            = 0.012
+  cloudspace_name = resource.spot_cloudspace.example.cloudspace_name
+  server_class    = "gp.vs1.large-dfw"
+  bid_price       = 0.012
 
   autoscaling = {
     min_nodes = 3
