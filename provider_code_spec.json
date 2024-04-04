@@ -424,7 +424,8 @@
 						"name": "kubeconfig",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "Kubeconfig blob"
+							"description": "Kubeconfig blob",
+							"deprecation_message": "Use the kubeconfig resource instead"
 						}
 					},
 					{
@@ -467,6 +468,27 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "Reason contains the reason why the CloudSpace is in a certain phase."
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "kubeconfig",
+			"schema": {
+				"attributes": [
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "ID of the cloudspace"
+						}
+					},
+					{
+						"name": "raw",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubeconfig blob"
 						}
 					}
 				]

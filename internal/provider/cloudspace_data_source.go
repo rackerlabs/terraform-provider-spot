@@ -101,12 +101,12 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		User:                  "ngpc-user",
 		Token:                 token,
 		Server:                cloudspace.Status.APIServerEndpoint,
-		Cluster:               cloudspace.Name,
+		ClusterName:           cloudspace.Name,
 		InsecureSkipTLSVerify: true,
 	}
 	data.Token = types.StringValue(kubeconfigVars.Token)
 	data.User = types.StringValue(kubeconfigVars.User)
-	kubeconfigBlob, err := createKubeconfig(kubeconfigVars)
+	kubeconfigBlob, err := createKubeconfig(kubeconfigVars, kubeconfigTemplateTokenBased)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create kubeconfig", err.Error())
 		return
@@ -118,28 +118,31 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 }
 
 type KubeconfigVars struct {
+	OrgID                 string
 	OrgName               string
 	User                  string
 	Token                 string
 	Server                string
-	Cluster               string
+	ClusterName           string
 	InsecureSkipTLSVerify bool
+	OidcIssuerURL         string
+	OidcClientID          string
 }
 
-const kubeconfigTemplate = `apiVersion: v1
+const kubeconfigTemplateTokenBased = `apiVersion: v1
 clusters:
   - cluster:
       insecure-skip-tls-verify: {{.InsecureSkipTLSVerify}}
       server: >-
         https://{{.Server}}/
-    name: {{.Cluster}}
+    name: {{.ClusterName}}
 contexts:
   - context:
-      cluster: {{.Cluster}}
+      cluster: {{.ClusterName}}
       namespace: default
       user: {{.User}}
-    name: {{.OrgName}}-{{.Cluster}}
-current-context: {{.OrgName}}-{{.Cluster}}
+    name: {{.OrgName}}-{{.ClusterName}}
+current-context: {{.OrgName}}-{{.ClusterName}}
 kind: Config
 preferences: {}
 users:
@@ -149,9 +152,9 @@ users:
         {{.Token}}
 `
 
-func createKubeconfig(kubeconfigVars KubeconfigVars) (string, error) {
+func createKubeconfig(kubeconfigVars KubeconfigVars, templatedStr string) (string, error) {
 	var tpl bytes.Buffer
-	t := template.Must(template.New("kubeconfig").Parse(kubeconfigTemplate))
+	t := template.Must(template.New("kubeconfig").Parse(templatedStr))
 	err := t.Execute(&tpl, kubeconfigVars)
 	if err != nil {
 		return "", fmt.Errorf("error executing template: %w", err)
