@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/provider_spot"
@@ -50,19 +52,29 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		tflog.Info(ctx, "Using provided ngpc api server", map[string]any{"ngpcAPIServer": ngpcAPIServer})
 	}
 
-	strRxtSpotToken := os.Getenv("RXTSPOT_TOKEN")
-	if strRxtSpotToken == "" {
-		rxtSpotTokenFile, found := os.LookupEnv("RXTSPOT_TOKEN_FILE")
-		if !found {
-			resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable")
-			return
-		}
-		tflog.Debug(ctx, "Reading authentication token from file", map[string]any{"rxtSpotTokenFile": rxtSpotTokenFile})
-		var err error
-		strRxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to read authentication token from file", err.Error())
-			return
+	var strRxtSpotToken string
+	var tokenStringVal basetypes.StringValue
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("rxtspot_token"), &tokenStringVal)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !tokenStringVal.IsNull() && !tokenStringVal.IsUnknown() {
+		strRxtSpotToken = tokenStringVal.ValueString()
+	} else {
+		strRxtSpotToken = os.Getenv("RXTSPOT_TOKEN")
+		if strRxtSpotToken == "" {
+			rxtSpotTokenFile, found := os.LookupEnv("RXTSPOT_TOKEN_FILE")
+			if !found {
+				resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable")
+				return
+			}
+			tflog.Debug(ctx, "Reading authentication token from file", map[string]any{"rxtSpotTokenFile": rxtSpotTokenFile})
+			var err error
+			strRxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
+			if err != nil {
+				resp.Diagnostics.AddError("Failed to read authentication token from file", err.Error())
+				return
+			}
 		}
 	}
 	// Setting token in environment variable for other workflows like kubeconfig generation

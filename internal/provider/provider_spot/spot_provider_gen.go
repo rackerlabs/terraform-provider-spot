@@ -4,13 +4,24 @@ package provider_spot
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 )
 
 func SpotProviderSchema(ctx context.Context) schema.Schema {
-	return schema.Schema{}
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"rxtspot_token": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				Description:         "API token used to authenticate against Spot backend",
+				MarkdownDescription: "API token used to authenticate against Spot backend",
+			},
+		},
+	}
 }
 
 type SpotModel struct {
+	RxtspotToken types.String `tfsdk:"rxtspot_token"`
 }

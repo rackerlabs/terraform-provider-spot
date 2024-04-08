@@ -2,7 +2,16 @@
 	"provider": {
 		"name": "spot",
 		"schema": {
-			"attributes": []
+			"attributes": [
+				{
+					"name": "rxtspot_token",
+					"string": {
+						"optional_required": "optional",
+						"sensitive": true,
+						"description": "API token used to authenticate against Spot backend"
+					}
+				}
+			]
 		}
 	},
 	"resources": [

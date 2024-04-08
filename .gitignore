@@ -7,3 +7,5 @@ terraform.tfstate.backup
 .vscode/settings.json
 *.log
 TODO.md
+.terraform/**
+
