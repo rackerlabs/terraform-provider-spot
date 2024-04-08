@@ -40,7 +40,7 @@ terraform {
 }
 
 provider "spot" {
-  # the provider configuration overrides environment variables
+  # overrides environment variables
   rxtspot_token = "<token>"
 }
 ```
