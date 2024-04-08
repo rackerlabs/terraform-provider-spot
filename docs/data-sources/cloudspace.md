@@ -18,7 +18,7 @@ data "spot_cloudspace" "example" {
 }
 
 # This outputs the current phase of the cloudspace.
-output "kubeconfig" {
+output "csphase" {
   value = data.spot_cloudspace.example.phase
 }
 ```

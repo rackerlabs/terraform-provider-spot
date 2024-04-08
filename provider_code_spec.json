@@ -425,7 +425,7 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "Kubeconfig blob",
-							"deprecation_message": "Use the kubeconfig resource instead"
+							"deprecation_message": "Use the kubeconfig data source instead"
 						}
 					},
 					{
