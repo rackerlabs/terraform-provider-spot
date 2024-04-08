@@ -1,9 +1,11 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
+	"html/template"
 	"os"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
@@ -94,7 +96,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	kubeconfigVars := KubeconfigVars{
 		User:                  "ngpc-user",
 		Token:                 token,
-		Server:                cloudspace.Status.APIServerEndpoint,
+		Host:                  fmt.Sprintf("https://%s/", cloudspace.Status.APIServerEndpoint),
 		ClusterName:           cloudspace.Name,
 		InsecureSkipTLSVerify: true, // TODO: false on production
 	}
@@ -131,13 +133,13 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	data.Raw = types.StringValue(kubeconfigBlob)
 
 	tokenKubecfg, diags := datasource_kubeconfig.KubeconfigsValue{
-		Cluster:  types.StringValue(cloudspace.Name),
+		Cluster:  types.StringValue(kubeconfigVars.ClusterName),
 		Exec:     types.ObjectNull(datasource_kubeconfig.ExecValue{}.AttributeTypes(ctx)),
-		Host:     types.StringValue(cloudspace.Status.APIServerEndpoint),
+		Host:     types.StringValue(kubeconfigVars.Host),
 		Insecure: types.BoolValue(kubeconfigVars.InsecureSkipTLSVerify),
 		Name:     types.StringValue(fmt.Sprintf("%s-%s", kubeconfigVars.OrgName, cloudspace.Name)),
 		Token:    types.StringValue(token),
-		Username: types.StringValue("ngpc-user"),
+		Username: types.StringValue(kubeconfigVars.User),
 	}.ToObjectValue(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -192,4 +194,26 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	data.Kubeconfigs = kubeCfgVal
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+type KubeconfigVars struct {
+	OrgID                 string
+	OrgName               string
+	User                  string
+	Token                 string
+	Host                  string
+	ClusterName           string
+	InsecureSkipTLSVerify bool
+	OidcIssuerURL         string
+	OidcClientID          string
+}
+
+func generateKubeconfig(kubeconfigVars KubeconfigVars, templatedStr string) (string, error) {
+	var tpl bytes.Buffer
+	t := template.Must(template.New("kubeconfig").Parse(templatedStr))
+	err := t.Execute(&tpl, kubeconfigVars)
+	if err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+	return tpl.String(), nil
 }

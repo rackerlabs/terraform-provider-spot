@@ -1,10 +1,8 @@
 package provider
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"os"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
@@ -95,14 +93,12 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	kubeconfigVars := KubeconfigVars{
-		// OrgName is used as the context name in the kubeconfig when downloaded from UI
-		// Not necessary here because getting orgname is difficult to implement
 		OrgName:               "rxtspot",
 		User:                  "ngpc-user",
 		Token:                 token,
-		Server:                cloudspace.Status.APIServerEndpoint,
+		Host:                  fmt.Sprintf("https://%s/", cloudspace.Status.APIServerEndpoint),
 		ClusterName:           cloudspace.Name,
-		InsecureSkipTLSVerify: true,
+		InsecureSkipTLSVerify: true, // TODO: false on production
 	}
 	data.Token = types.StringValue(kubeconfigVars.Token)
 	data.User = types.StringValue(kubeconfigVars.User)
@@ -117,24 +113,13 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-type KubeconfigVars struct {
-	OrgID                 string
-	OrgName               string
-	User                  string
-	Token                 string
-	Server                string
-	ClusterName           string
-	InsecureSkipTLSVerify bool
-	OidcIssuerURL         string
-	OidcClientID          string
-}
-
+// TODO: Remove this const because this is deprecated
 const kubeconfigTemplateTokenBased = `apiVersion: v1
 clusters:
   - cluster:
       insecure-skip-tls-verify: {{.InsecureSkipTLSVerify}}
       server: >-
-        https://{{.Server}}/
+        {{.Host}}
     name: {{.ClusterName}}
 contexts:
   - context:
@@ -151,13 +136,3 @@ users:
       token: >-
         {{.Token}}
 `
-
-func generateKubeconfig(kubeconfigVars KubeconfigVars, templatedStr string) (string, error) {
-	var tpl bytes.Buffer
-	t := template.Must(template.New("kubeconfig").Parse(templatedStr))
-	err := t.Execute(&tpl, kubeconfigVars)
-	if err != nil {
-		return "", fmt.Errorf("error executing template: %w", err)
-	}
-	return tpl.String(), nil
-}

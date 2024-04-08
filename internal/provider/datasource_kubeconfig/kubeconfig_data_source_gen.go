@@ -61,8 +61,8 @@ func KubeconfigDataSourceSchema(ctx context.Context) schema.Schema {
 						},
 						"host": schema.StringAttribute{
 							Computed:            true,
-							Description:         "Kube api server address",
-							MarkdownDescription: "Kube api server address",
+							Description:         "Kube api server api endpoint",
+							MarkdownDescription: "Kube api server api endpoint",
 						},
 						"insecure": schema.BoolAttribute{
 							Computed:            true,
@@ -76,6 +76,7 @@ func KubeconfigDataSourceSchema(ctx context.Context) schema.Schema {
 						},
 						"token": schema.StringAttribute{
 							Computed:            true,
+							Sensitive:           true,
 							Description:         "Token of your service account",
 							MarkdownDescription: "Token of your service account",
 						},

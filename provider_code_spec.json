@@ -522,7 +522,7 @@
 										"name": "host",
 										"string": {
 											"computed_optional_required": "computed",
-											"description": "Kube api server address"
+											"description": "Kube api server api endpoint"
 										}
 									},
 									{
@@ -536,7 +536,8 @@
 										"name": "token",
 										"string": {
 											"computed_optional_required": "computed",
-											"description": "Token of your service account"
+											"description": "Token of your service account",
+											"sensitive": true
 										}
 									},
 									{
