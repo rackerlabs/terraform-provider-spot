@@ -34,7 +34,7 @@ output "kubeconfig" {
 
 - `api_server_endpoint` (String) Kubernetes api server URL
 - `health` (String) Health indicates if CloudSpace has a working APIServer and available nodes
-- `kubeconfig` (String) Kubeconfig blob
+- `kubeconfig` (String, Deprecated) Kubeconfig blob
 - `name` (String) Name of the cloudspace
 - `phase` (String) Phase of the cloudspace
 - `reason` (String) Reason contains the reason why the CloudSpace is in a certain phase.

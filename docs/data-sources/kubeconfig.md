@@ -21,4 +21,28 @@ description: |-
 
 ### Read-Only
 
+- `kubeconfigs` (Attributes List) (see [below for nested schema](#nestedatt--kubeconfigs))
 - `raw` (String) Kubeconfig blob
+
+<a id="nestedatt--kubeconfigs"></a>
+### Nested Schema for `kubeconfigs`
+
+Read-Only:
+
+- `cluster` (String) Name of the cluster
+- `exec` (Attributes) (see [below for nested schema](#nestedatt--kubeconfigs--exec))
+- `host` (String) Kube api server address
+- `insecure` (Boolean) Insecure flag
+- `name` (String) Name of the kubeconfig context
+- `token` (String) Token of your service account
+- `username` (String) Name of the user
+
+<a id="nestedatt--kubeconfigs--exec"></a>
+### Nested Schema for `kubeconfigs.exec`
+
+Read-Only:
+
+- `api_version` (String) API version
+- `args` (List of String)
+- `command` (String) Command to execute
+- `env` (Map of String)

@@ -10,6 +10,7 @@ import (
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_kubeconfig"
 	ktypes "k8s.io/apimachinery/pkg/types"
@@ -122,13 +123,73 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	kubeconfigVars.OrgName = orgName
 
-	kubeconfigBlob, err := createKubeconfig(kubeconfigVars, kubeconfigTemplate)
+	kubeconfigBlob, err := generateKubeconfig(kubeconfigVars, kubeconfigTemplate)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create kubeconfig", err.Error())
 		return
 	}
 	data.Raw = types.StringValue(kubeconfigBlob)
 
+	tokenKubecfg, diags := datasource_kubeconfig.KubeconfigsValue{
+		Cluster:  types.StringValue(cloudspace.Name),
+		Exec:     types.ObjectNull(datasource_kubeconfig.ExecValue{}.AttributeTypes(ctx)),
+		Host:     types.StringValue(cloudspace.Status.APIServerEndpoint),
+		Insecure: types.BoolValue(kubeconfigVars.InsecureSkipTLSVerify),
+		Name:     types.StringValue(fmt.Sprintf("%s-%s", kubeconfigVars.OrgName, cloudspace.Name)),
+		Token:    types.StringValue(token),
+		Username: types.StringValue("ngpc-user"),
+	}.ToObjectValue(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	execArgs := []string{
+		"oidc-login",
+		"get-token",
+		fmt.Sprintf("--oidc-issuer-url=%s", kubeconfigVars.OidcIssuerURL),
+		fmt.Sprintf("--oidc-client-id=%s", kubeconfigVars.OidcClientID),
+		"--oidc-extra-scope=openid",
+		"--oidc-extra-scope=profile",
+		"--oidc-extra-scope=email",
+		fmt.Sprintf("--oidc-auth-request-extra-params=organization=%s", kubeconfigVars.OrgID),
+		fmt.Sprintf("--token-cache-dir=~/.kube/cache/oidc-login/%s", kubeconfigVars.OrgID),
+	}
+	execArgsListVal, diags := types.ListValueFrom(ctx, types.StringType, execArgs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	execObjVal, diags := datasource_kubeconfig.ExecValue{
+		ApiVersion: types.StringValue("client.authentication.k8s.io/v1beta1"),
+		Command:    types.StringValue("kubectl"),
+		Args:       execArgsListVal,
+		Env:        types.MapNull(types.StringType),
+	}.ToObjectValue(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	oidcKubecfg, diags := datasource_kubeconfig.KubeconfigsValue{
+		Cluster:  types.StringValue(cloudspace.Name),
+		Host:     types.StringValue(cloudspace.Status.APIServerEndpoint),
+		Insecure: types.BoolValue(kubeconfigVars.InsecureSkipTLSVerify),
+		Name:     types.StringValue(fmt.Sprintf("%s-%s-oidc", kubeconfigVars.OrgName, cloudspace.Name)),
+		Token:    types.StringNull(),
+		Username: types.StringValue("oidc"),
+		Exec:     execObjVal,
+	}.ToObjectValue(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	kubeCfgVal, diags := types.ListValueFrom(ctx, datasource_kubeconfig.KubeconfigsValue{}.Type(ctx), []basetypes.ObjectValue{tokenKubecfg, oidcKubecfg})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	data.Kubeconfigs = kubeCfgVal
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

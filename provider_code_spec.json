@@ -490,6 +490,98 @@
 							"computed_optional_required": "computed",
 							"description": "Kubeconfig blob"
 						}
+					},
+					{
+						"name": "kubeconfigs",
+						"list_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "name",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Name of the kubeconfig context"
+										}
+									},
+									{
+										"name": "cluster",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Name of the cluster"
+										}
+									},
+									{
+										"name": "username",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Name of the user"
+										}
+									},
+									{
+										"name": "host",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Kube api server address"
+										}
+									},
+									{
+										"name": "insecure",
+										"bool": {
+											"computed_optional_required": "computed",
+											"description": "Insecure flag"
+										}
+									},
+									{
+										"name": "token",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Token of your service account"
+										}
+									},
+									{
+										"name": "exec",
+										"single_nested": {
+											"computed_optional_required": "computed",
+											"attributes": [
+												{
+													"name": "api_version",
+													"string": {
+														"computed_optional_required": "computed",
+														"description": "API version"
+													}
+												},
+												{
+													"name": "command",
+													"string": {
+														"computed_optional_required": "computed",
+														"description": "Command to execute"
+													}
+												},
+												{
+													"name": "args",
+													"list": {
+														"computed_optional_required": "computed",
+														"element_type": {
+															"string": {}
+														}
+													}
+												},
+												{
+													"name": "env",
+													"map": {
+														"computed_optional_required": "computed",
+														"element_type": {
+															"string": {}
+														}
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						}
 					}
 				]
 			}

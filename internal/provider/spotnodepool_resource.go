@@ -319,6 +319,7 @@ func (r *spotnodepoolResource) Delete(ctx context.Context, req resource.DeleteRe
 
 func (r *spotnodepoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
+	// TODO: Implement the logic to retrieve the object using the cloudspace name and serverclass
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 

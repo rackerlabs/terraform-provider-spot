@@ -106,7 +106,7 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	data.Token = types.StringValue(kubeconfigVars.Token)
 	data.User = types.StringValue(kubeconfigVars.User)
-	kubeconfigBlob, err := createKubeconfig(kubeconfigVars, kubeconfigTemplateTokenBased)
+	kubeconfigBlob, err := generateKubeconfig(kubeconfigVars, kubeconfigTemplateTokenBased)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create kubeconfig", err.Error())
 		return
@@ -152,7 +152,7 @@ users:
         {{.Token}}
 `
 
-func createKubeconfig(kubeconfigVars KubeconfigVars, templatedStr string) (string, error) {
+func generateKubeconfig(kubeconfigVars KubeconfigVars, templatedStr string) (string, error) {
 	var tpl bytes.Buffer
 	t := template.Must(template.New("kubeconfig").Parse(templatedStr))
 	err := t.Execute(&tpl, kubeconfigVars)
