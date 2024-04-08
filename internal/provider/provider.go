@@ -118,6 +118,10 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		resp.Diagnostics.AddError("Failed to get org_id from authentication token", err.Error())
 		return
 	}
+	if err = os.Setenv("RXTSPOT_ORG_ID", orgID); err != nil {
+		resp.Diagnostics.AddError("Failed to set org_id in environment variable RXTSPOT_ORG_ID", err.Error())
+		return
+	}
 	orgNamespace := findNamespaceFromID(orgID)
 	tflog.Debug(ctx, "Setting org_id in environment variable RXTSPOT_ORG_NS", map[string]any{"org_id": orgID, "orgNamespace": orgNamespace})
 	if err = os.Setenv("RXTSPOT_ORG_NS", orgNamespace); err != nil {
@@ -145,6 +149,7 @@ func (p *spotProvider) Metadata(ctx context.Context, req provider.MetadataReques
 func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewCloudspaceDataSource,
+		NewKubeconfigDataSource,
 	}
 }
 

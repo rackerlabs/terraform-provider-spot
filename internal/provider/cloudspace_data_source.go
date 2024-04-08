@@ -1,10 +1,8 @@
 package provider
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"os"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
@@ -95,18 +93,16 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	kubeconfigVars := KubeconfigVars{
-		// OrgName is used as the context name in the kubeconfig when downloaded from UI
-		// Not necessary here because getting orgname is difficult to implement
 		OrgName:               "rxtspot",
 		User:                  "ngpc-user",
 		Token:                 token,
-		Server:                cloudspace.Status.APIServerEndpoint,
-		Cluster:               cloudspace.Name,
-		InsecureSkipTLSVerify: true,
+		Host:                  fmt.Sprintf("https://%s/", cloudspace.Status.APIServerEndpoint),
+		ClusterName:           cloudspace.Name,
+		InsecureSkipTLSVerify: true, // TODO: false on production
 	}
 	data.Token = types.StringValue(kubeconfigVars.Token)
 	data.User = types.StringValue(kubeconfigVars.User)
-	kubeconfigBlob, err := createKubeconfig(kubeconfigVars)
+	kubeconfigBlob, err := generateKubeconfig(kubeconfigVars, kubeconfigTemplateTokenBased)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create kubeconfig", err.Error())
 		return
@@ -117,29 +113,21 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-type KubeconfigVars struct {
-	OrgName               string
-	User                  string
-	Token                 string
-	Server                string
-	Cluster               string
-	InsecureSkipTLSVerify bool
-}
-
-const kubeconfigTemplate = `apiVersion: v1
+// TODO: Remove this const because this is deprecated
+const kubeconfigTemplateTokenBased = `apiVersion: v1
 clusters:
   - cluster:
       insecure-skip-tls-verify: {{.InsecureSkipTLSVerify}}
       server: >-
-        https://{{.Server}}/
-    name: {{.Cluster}}
+        {{.Host}}
+    name: {{.ClusterName}}
 contexts:
   - context:
-      cluster: {{.Cluster}}
+      cluster: {{.ClusterName}}
       namespace: default
       user: {{.User}}
-    name: {{.OrgName}}-{{.Cluster}}
-current-context: {{.OrgName}}-{{.Cluster}}
+    name: {{.OrgName}}-{{.ClusterName}}
+current-context: {{.OrgName}}-{{.ClusterName}}
 kind: Config
 preferences: {}
 users:
@@ -148,13 +136,3 @@ users:
       token: >-
         {{.Token}}
 `
-
-func createKubeconfig(kubeconfigVars KubeconfigVars) (string, error) {
-	var tpl bytes.Buffer
-	t := template.Must(template.New("kubeconfig").Parse(kubeconfigTemplate))
-	err := t.Execute(&tpl, kubeconfigVars)
-	if err != nil {
-		return "", fmt.Errorf("error executing template: %w", err)
-	}
-	return tpl.String(), nil
-}

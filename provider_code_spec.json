@@ -424,7 +424,8 @@
 						"name": "kubeconfig",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "Kubeconfig blob"
+							"description": "Kubeconfig blob",
+							"deprecation_message": "Use the kubeconfig data source instead"
 						}
 					},
 					{
@@ -467,6 +468,120 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "Reason contains the reason why the CloudSpace is in a certain phase."
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "kubeconfig",
+			"schema": {
+				"attributes": [
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "ID of the cloudspace"
+						}
+					},
+					{
+						"name": "raw",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubeconfig blob"
+						}
+					},
+					{
+						"name": "kubeconfigs",
+						"list_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "name",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Name of the kubeconfig context"
+										}
+									},
+									{
+										"name": "cluster",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Name of the cluster"
+										}
+									},
+									{
+										"name": "username",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Name of the user"
+										}
+									},
+									{
+										"name": "host",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Kube api server api endpoint"
+										}
+									},
+									{
+										"name": "insecure",
+										"bool": {
+											"computed_optional_required": "computed",
+											"description": "Insecure flag"
+										}
+									},
+									{
+										"name": "token",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "Token of your service account",
+											"sensitive": true
+										}
+									},
+									{
+										"name": "exec",
+										"single_nested": {
+											"computed_optional_required": "computed",
+											"attributes": [
+												{
+													"name": "api_version",
+													"string": {
+														"computed_optional_required": "computed",
+														"description": "API version"
+													}
+												},
+												{
+													"name": "command",
+													"string": {
+														"computed_optional_required": "computed",
+														"description": "Command to execute"
+													}
+												},
+												{
+													"name": "args",
+													"list": {
+														"computed_optional_required": "computed",
+														"element_type": {
+															"string": {}
+														}
+													}
+												},
+												{
+													"name": "env",
+													"map": {
+														"computed_optional_required": "computed",
+														"element_type": {
+															"string": {}
+														}
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]

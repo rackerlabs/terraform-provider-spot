@@ -31,6 +31,7 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				Computed:            true,
 				Description:         "Kubeconfig blob",
 				MarkdownDescription: "Kubeconfig blob",
+				DeprecationMessage:  "Use the kubeconfig data source instead",
 			},
 			"name": schema.StringAttribute{
 				Computed:            true,

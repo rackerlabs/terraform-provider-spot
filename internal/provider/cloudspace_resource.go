@@ -135,12 +135,12 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
 	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-	tflog.Debug(ctx, "Updated local state", map[string]any{"data": data})
 
 	// TODO: Use "wait_for_ready" attribute to wait for the cloudspace to be ready
 	// Refer:  https://github.com/hashicorp/terraform-provider-kubernetes/blob/main/kubernetes/resource_kubernetes_deployment_v1.go#L246
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	tflog.Debug(ctx, "Updated local state")
 }
 
 func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -290,5 +290,11 @@ func (r *cloudspaceResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 func (r *cloudspaceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
+	namespace := os.Getenv("RXTSPOT_ORG_NS")
+	if namespace == "" {
+		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
+		return
+	}
+	req.ID = fmt.Sprintf("%s/%s", namespace, req.ID)
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

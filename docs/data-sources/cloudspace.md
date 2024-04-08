@@ -8,7 +8,7 @@ description: |-
 
 # spot_cloudspace Data Source
 
-This data source is useful to get details of the cloudspace. You can access the kubeconfig and other necessary values associated with a cloudspace.
+This data source is useful to read attributes of the cloudspace.
 
 ## Example Usage
 
@@ -17,9 +17,9 @@ data "spot_cloudspace" "example" {
   id = "1d7f9f9b-9e8d-4c8c-a9d5-e6e6f6f6f6f6"
 }
 
-# This outputs the kubeconfig to access the cloudspace.
-output "kubeconfig" {
-  value = data.spot_cloudspace.my-cloudspace.kubeconfig
+# This outputs the current phase of the cloudspace.
+output "csphase" {
+  value = data.spot_cloudspace.example.phase
 }
 ```
 
@@ -34,7 +34,7 @@ output "kubeconfig" {
 
 - `api_server_endpoint` (String) Kubernetes api server URL
 - `health` (String) Health indicates if CloudSpace has a working APIServer and available nodes
-- `kubeconfig` (String) Kubeconfig blob
+- `kubeconfig` (String, Deprecated) Kubeconfig blob
 - `name` (String) Name of the cloudspace
 - `phase` (String) Phase of the cloudspace
 - `reason` (String) Reason contains the reason why the CloudSpace is in a certain phase.

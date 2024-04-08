@@ -63,3 +63,20 @@ func readFileUpToNBytes(filename string, n int64) (string, error) {
 
 	return strings.TrimSpace(string(buf)), nil
 }
+
+// FindOrgName returns organization name from organization id
+func FindOrgName(ctx context.Context, client ngpc.Client, userJWT string, orgID string) (string, error) {
+	orgList, err := client.Organizer().ListOrganizationsForUser(ctx, userJWT)
+	if err != nil {
+		return "", err
+	}
+	if orgList == nil {
+		return "", fmt.Errorf("organization list %s not found", orgID)
+	}
+	for _, org := range orgList.Organizations {
+		if *org.ID == orgID {
+			return org.GetDisplayName(), nil
+		}
+	}
+	return "", fmt.Errorf("organization %s not found", orgID)
+}

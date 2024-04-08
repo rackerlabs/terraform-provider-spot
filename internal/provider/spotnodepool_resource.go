@@ -319,6 +319,12 @@ func (r *spotnodepoolResource) Delete(ctx context.Context, req resource.DeleteRe
 
 func (r *spotnodepoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
+	namespace := os.Getenv("RXTSPOT_ORG_NS")
+	if namespace == "" {
+		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
+		return
+	}
+	req.ID = fmt.Sprintf("%s/%s", namespace, req.ID)
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
