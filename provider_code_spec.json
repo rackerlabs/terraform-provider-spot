@@ -4,7 +4,7 @@
 		"schema": {
 			"attributes": [
 				{
-					"name": "rxtspot_token",
+					"name": "token",
 					"string": {
 						"optional_required": "optional",
 						"sensitive": true,
@@ -23,7 +23,7 @@
 						"name": "id",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The id of the cloudspace.",
+							"description": "The id of the cloudspace",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -42,14 +42,38 @@
 						"name": "last_updated",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The last time the cloudspace was updated."
+							"description": "The last time the cloudspace was updated.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "resource_version",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform."
+							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
 						}
 					},
 					{
@@ -103,7 +127,19 @@
 								"static": false
 							},
 							"computed_optional_required": "computed_optional",
-							"description": "High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads."
+							"description": "High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+											}
+										],
+										"schema_definition": "boolplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
 						}
 					},
 					{
@@ -161,13 +197,37 @@
 						"name": "first_ready_timestamp",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The time when the cloudspace was first ready."
+							"description": "The time when the cloudspace was first ready.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "spotnodepool_ids",
 						"list": {
 							"computed_optional_required": "computed",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+											}
+										],
+										"schema_definition": "listplanmodifier.UseStateForUnknown()"
+									}
+								}
+							],
 							"description": "IDs of the spotnodepools associated with the cloudspace.",
 							"element_type": {
 								"string": {}
@@ -178,18 +238,54 @@
 						"name": "bids",
 						"set_nested": {
 							"computed_optional_required": "computed",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+											}
+										],
+										"schema_definition": "setplanmodifier.UseStateForUnknown()"
+									}
+								}
+							],
 							"nested_object": {
 								"attributes": [
 									{
 										"name": "bid_name",
 										"string": {
-											"computed_optional_required": "computed"
+											"computed_optional_required": "computed",
+											"plan_modifiers": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+															}
+														],
+														"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+													}
+												}
+											]
 										}
 									},
 									{
 										"name": "won_count",
 										"int64": {
-											"computed_optional_required": "computed"
+											"computed_optional_required": "computed",
+											"plan_modifiers": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+															}
+														],
+														"schema_definition": "int64planmodifier.UseStateForUnknown()"
+													}
+												}
+											]
 										}
 									}
 								]
@@ -235,7 +331,7 @@
 						"name": "id",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The id of the cloudspace.",
+							"description": "The id of the spotnodepool.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -254,14 +350,38 @@
 						"name": "last_updated",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The last time the spotnodepool was updated."
+							"description": "The last time the spotnodepool was updated.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
 						}
 					},
 					{
 						"name": "resource_version",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform."
+							"description": "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
 						}
 					},
 					{
@@ -461,6 +581,18 @@
 						"name": "bid_status",
 						"string": {
 							"computed_optional_required": "computed",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							],
 							"description": "Status of the bid associated with this spotnodepool."
 						}
 					},
@@ -468,6 +600,18 @@
 						"name": "won_count",
 						"int64": {
 							"computed_optional_required": "computed",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+											}
+										],
+										"schema_definition": "int64planmodifier.UseStateForUnknown()"
+									}
+								}
+							],
 							"description": "Number of won bids."
 						}
 					}
@@ -484,14 +628,29 @@
 						"name": "id",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "ID of the cloudspace"
+							"description": "ID of the cloudspace, same as cloudspace name."
 						}
 					},
 					{
 						"name": "name",
 						"string": {
 							"computed_optional_required": "computed",
+							"description": "Name of the cloudspace",
+							"deprecation_message": "Use the cloudspace_name attribute instead"
+						}
+					},
+					{
+						"name": "cloudspace_name",
+						"string": {
+							"computed_optional_required": "computed",
 							"description": "Name of the cloudspace"
+						}
+					},
+					{
+						"name": "hacontrol_plane",
+						"bool": {
+							"computed_optional_required": "computed",
+							"description": "High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads."
 						}
 					},
 					{
@@ -499,6 +658,80 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "The region where the cloudspace resides."
+						}
+					},
+					{
+						"name": "preemption_webhook",
+						"string": {
+							"computed_optional_required": "optional",
+							"description": "Webhook URL for preemption notifications."
+						}
+					},
+					{
+						"name": "first_ready_timestamp",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The time when the cloudspace was first ready."
+						}
+					},
+					{
+						"name": "spotnodepool_ids",
+						"list": {
+							"computed_optional_required": "computed",
+							"description": "IDs of the spotnodepools associated with the cloudspace.",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "bids",
+						"set_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "bid_name",
+										"string": {
+											"computed_optional_required": "computed"
+										}
+									},
+									{
+										"name": "won_count",
+										"int64": {
+											"computed_optional_required": "computed"
+										}
+									}
+								]
+							}
+						}
+					},
+					{
+						"name": "pending_allocations",
+						"set_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "bid_name",
+										"string": {
+											"computed_optional_required": "computed"
+										}
+									},
+									{
+										"name": "server_class",
+										"string": {
+											"computed_optional_required": "computed"
+										}
+									},
+									{
+										"name": "count",
+										"int64": {
+											"computed_optional_required": "computed"
+										}
+									}
+								]
+							}
 						}
 					},
 					{
@@ -555,6 +788,84 @@
 			}
 		},
 		{
+			"name": "spotnodepool",
+			"schema": {
+				"attributes": [
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "ID of the spotnodepool"
+						}
+					},
+					{
+						"name": "cloudspace_name",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The name of the cloudspace"
+						}
+					},
+					{
+						"name": "server_class",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The class of servers to use for the node pool."
+						}
+					},
+					{
+						"name": "desired_server_count",
+						"int64": {
+							"computed_optional_required": "computed",
+							"description": "The desired number of servers in the node pool."
+						}
+					},
+					{
+						"name": "bid_price",
+						"float64": {
+							"computed_optional_required": "computed",
+							"description": "The bid price for the server in USD"
+						}
+					},
+					{
+						"name": "autoscaling",
+						"single_nested": {
+							"computed_optional_required": "computed",
+							"attributes": [
+								{
+									"name": "max_nodes",
+									"int64": {
+										"computed_optional_required": "computed",
+										"description": "The maximum number of nodes in the node pool."
+									}
+								},
+								{
+									"name": "min_nodes",
+									"int64": {
+										"computed_optional_required": "computed",
+										"description": "The minimum number of nodes in the node pool."
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "bid_status",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Status of the bid associated with this spotnodepool."
+						}
+					},
+					{
+						"name": "won_count",
+						"int64": {
+							"computed_optional_required": "computed",
+							"description": "Number of won bids."
+						}
+					}
+				]
+			}
+		},
+		{
 			"name": "kubeconfig",
 			"schema": {
 				"attributes": [
@@ -562,7 +873,7 @@
 						"name": "id",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "ID of the cloudspace"
+							"description": "ID of the cloudspace, same as cloudspace name."
 						}
 					},
 					{

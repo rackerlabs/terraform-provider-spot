@@ -9,6 +9,7 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -122,21 +123,13 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 	tflog.Info(ctx, "Created cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
-	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
-	data.Region = types.StringValue(cloudspace.Spec.Region)
-	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	if cloudspace.Spec.Webhook != "" {
-		// even if we dont set string value it becomes "" by default
-		// assume it as Null if it is not set
-		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
-	} else {
-		data.PreemptionWebhook = types.StringNull()
+	diags := steCloudspaceState(ctx, cloudspace, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
-	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
-	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
-	// TODO: Use "wait_for_ready" attribute to wait for the cloudspace to be ready
+	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
+	// TODO: Use "wait_until_ready" attribute to wait for the cloudspace to be ready
 	// Refer:  https://github.com/hashicorp/terraform-provider-kubernetes/blob/main/kubernetes/resource_kubernetes_deployment_v1.go#L246
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -169,19 +162,12 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 		resp.Diagnostics.AddError("Failed to get cloudspace", err.Error())
 		return
 	}
-
-	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
-	data.Region = types.StringValue(cloudspace.Spec.Region)
-	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	if cloudspace.Spec.Webhook != "" {
-		// even if we dont set string value it becomes "" by default
-		// assume it as Null if it is not set
-		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
-	} else {
-		data.PreemptionWebhook = types.StringNull()
+	diags := steCloudspaceState(ctx, cloudspace, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
-	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
+	data.LastUpdated = types.StringNull()
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -215,8 +201,9 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 			APIVersion: "ngpc.rxt.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
+			Name:      name,
+			Namespace: namespace,
+			// TODO: Save resource version in the private state not in the public state
 			ResourceVersion: curData.ResourceVersion.ValueString(),
 		},
 		Spec: ngpcv1.CloudSpaceSpec{
@@ -233,22 +220,12 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	tflog.Info(ctx, "Updated cloudspace", map[string]any{"name": data.CloudspaceName.ValueString()})
-
-	// Save updated data into Terraform state
-	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
-	data.Region = types.StringValue(cloudspace.Spec.Region)
-	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	if cloudspace.Spec.Webhook != "" {
-		// even if we dont set string value it becomes "" by default
-		// assume it as Null if it is not set
-		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
-	} else {
-		data.PreemptionWebhook = types.StringNull()
+	diags := steCloudspaceState(ctx, cloudspace, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
-	data.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
-	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
+	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -297,4 +274,81 @@ func (r *cloudspaceResource) ImportState(ctx context.Context, req resource.Impor
 	}
 	req.ID = fmt.Sprintf("%s/%s", namespace, req.ID)
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func steCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, state *resource_cloudspace.CloudspaceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	state.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
+	state.Region = types.StringValue(cloudspace.Spec.Region)
+	state.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
+	if cloudspace.Spec.Webhook != "" {
+		// even if we dont set string value it becomes "" by default
+		// assume it as Null if it is not set
+		state.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	} else {
+		state.PreemptionWebhook = types.StringNull()
+	}
+	state.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
+	state.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
+	state.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
+	state.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	var bidsSlice []resource_cloudspace.BidsValue
+	for _, val := range cloudspace.Status.Bids {
+		var wonCount types.Int64
+		if val.WonCount != nil {
+			wonCount = types.Int64Value(int64(*val.WonCount))
+		} else {
+			wonCount = types.Int64Null()
+		}
+		bidObjVal, convertDiags := resource_cloudspace.BidsValue{
+			BidName:  types.StringValue(val.BidName),
+			WonCount: wonCount,
+		}.ToObjectValue(ctx)
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		bidObjValuable, convertDiags := resource_cloudspace.BidsType{}.ValueFromObject(ctx, bidObjVal)
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		bidsSlice = append(bidsSlice, bidObjValuable.(resource_cloudspace.BidsValue))
+	}
+	state.Bids, diags = types.SetValueFrom(ctx, resource_cloudspace.BidsValue{}.Type(ctx), bidsSlice)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return diags
+	}
+	var allocationsSlice []resource_cloudspace.PendingAllocationsValue
+	for _, val := range cloudspace.Status.PendingAllocations {
+		allocObjVal, convertDiags := resource_cloudspace.PendingAllocationsValue{
+			BidName:     types.StringValue(val.BidName),
+			ServerClass: types.StringValue(val.ServerClassName),
+			Count:       types.Int64Value(int64(val.Count)),
+		}.ToObjectValue(ctx)
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		allocObjValuable, convertDiags := resource_cloudspace.PendingAllocationsType{}.ValueFromObject(ctx, allocObjVal)
+		diags.Append(convertDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		allocationsSlice = append(allocationsSlice, allocObjValuable.(resource_cloudspace.PendingAllocationsValue))
+	}
+	var convertDiags diag.Diagnostics
+	state.PendingAllocations, convertDiags = types.SetValueFrom(ctx,
+		resource_cloudspace.PendingAllocationsValue{}.Type(ctx), allocationsSlice)
+	diags.Append(convertDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	return diags
 }

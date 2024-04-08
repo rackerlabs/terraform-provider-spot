@@ -37,9 +37,31 @@ resource "spot_cloudspace" "example" {
 
 ### Read-Only
 
-- `id` (String) The id of the cloudspace.
+- `bids` (Attributes Set) (see [below for nested schema](#nestedatt--bids))
+- `first_ready_timestamp` (String) The time when the cloudspace was first ready.
+- `id` (String) The id of the cloudspace
 - `last_updated` (String) The last time the cloudspace was updated.
+- `pending_allocations` (Attributes Set) (see [below for nested schema](#nestedatt--pending_allocations))
 - `resource_version` (String) The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.
+- `spotnodepool_ids` (List of String) IDs of the spotnodepools associated with the cloudspace.
+
+<a id="nestedatt--bids"></a>
+### Nested Schema for `bids`
+
+Read-Only:
+
+- `bid_name` (String)
+- `won_count` (Number)
+
+
+<a id="nestedatt--pending_allocations"></a>
+### Nested Schema for `pending_allocations`
+
+Read-Only:
+
+- `bid_name` (String)
+- `count` (Number)
+- `server_class` (String)
 
 ### Available Regions
 

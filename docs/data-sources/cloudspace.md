@@ -28,16 +28,44 @@ output "csphase" {
 
 ### Required
 
-- `id` (String) ID of the cloudspace
+- `id` (String) ID of the cloudspace, same as cloudspace name.
+
+### Optional
+
+- `preemption_webhook` (String) Webhook URL for preemption notifications.
 
 ### Read-Only
 
 - `api_server_endpoint` (String) Kubernetes api server URL
+- `bids` (Attributes Set) (see [below for nested schema](#nestedatt--bids))
+- `cloudspace_name` (String) Name of the cloudspace
+- `first_ready_timestamp` (String) The time when the cloudspace was first ready.
+- `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `health` (String) Health indicates if CloudSpace has a working APIServer and available nodes
 - `kubeconfig` (String, Deprecated) Kubeconfig blob
-- `name` (String) Name of the cloudspace
+- `name` (String, Deprecated) Name of the cloudspace
+- `pending_allocations` (Attributes Set) (see [below for nested schema](#nestedatt--pending_allocations))
 - `phase` (String) Phase of the cloudspace
 - `reason` (String) Reason contains the reason why the CloudSpace is in a certain phase.
 - `region` (String) The region where the cloudspace resides.
+- `spotnodepool_ids` (List of String) IDs of the spotnodepools associated with the cloudspace.
 - `token` (String) Token to use for authentication to kubernetes api server
 - `user` (String) Name of the user to use for authentication to kubernetes api server
+
+<a id="nestedatt--bids"></a>
+### Nested Schema for `bids`
+
+Read-Only:
+
+- `bid_name` (String)
+- `won_count` (Number)
+
+
+<a id="nestedatt--pending_allocations"></a>
+### Nested Schema for `pending_allocations`
+
+Read-Only:
+
+- `bid_name` (String)
+- `count` (Number)
+- `server_class` (String)

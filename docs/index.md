@@ -41,7 +41,7 @@ terraform {
 
 provider "spot" {
   # overrides environment variables
-  rxtspot_token = "<token>"
+  token = "<rxtspot_token>"
 }
 ```
 
@@ -50,7 +50,7 @@ provider "spot" {
 
 ### Optional
 
-- `rxtspot_token` (String, Sensitive) API token used to authenticate against Spot backend
+- `token` (String, Sensitive) API token used to authenticate against Spot backend
 
 ## Create Your First Cloudspace
 

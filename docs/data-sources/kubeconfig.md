@@ -70,7 +70,7 @@ resource "local_file" "kubeconfig" {
 
 ### Required
 
-- `id` (String) ID of the cloudspace
+- `id` (String) ID of the cloudspace, same as cloudspace name.
 
 ### Read-Only
 

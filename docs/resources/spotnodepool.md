@@ -41,9 +41,11 @@ resource "spot_spotnodepool" "example" {
 
 ### Read-Only
 
-- `id` (String) The id of the cloudspace.
+- `bid_status` (String) Status of the bid associated with this spotnodepool.
+- `id` (String) The id of the spotnodepool.
 - `last_updated` (String) The last time the spotnodepool was updated.
 - `resource_version` (String) The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.
+- `won_count` (Number) Number of won bids.
 
 <a id="nestedatt--autoscaling"></a>
 ### Nested Schema for `autoscaling`
@@ -91,5 +93,6 @@ Import is supported using the following syntax:
 
 ```shell
 # A spotnodepool can be imported by specifying its id.
+# An id of the spotnodepool is available in the cloudspace resource attributes, spotnodepool_ids, bids and pending_allocations.
 terraform import spot_spotnodepool.example c126b90d-00d1-48fb-92ae-b8c88e27f511
 ```
