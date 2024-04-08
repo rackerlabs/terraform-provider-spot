@@ -156,6 +156,73 @@
 								}
 							]
 						}
+					},
+					{
+						"name": "first_ready_timestamp",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The time when the cloudspace was first ready."
+						}
+					},
+					{
+						"name": "spotnodepool_ids",
+						"list": {
+							"computed_optional_required": "computed",
+							"description": "IDs of the spotnodepools associated with the cloudspace.",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "bids",
+						"set_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "bid_name",
+										"string": {
+											"computed_optional_required": "computed"
+										}
+									},
+									{
+										"name": "won_count",
+										"int64": {
+											"computed_optional_required": "computed"
+										}
+									}
+								]
+							}
+						}
+					},
+					{
+						"name": "pending_allocations",
+						"set_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "bid_name",
+										"string": {
+											"computed_optional_required": "computed"
+										}
+									},
+									{
+										"name": "server_class",
+										"string": {
+											"computed_optional_required": "computed"
+										}
+									},
+									{
+										"name": "count",
+										"int64": {
+											"computed_optional_required": "computed"
+										}
+									}
+								]
+							}
+						}
 					}
 				]
 			}
@@ -388,6 +455,20 @@
 									}
 								}
 							]
+						}
+					},
+					{
+						"name": "bid_status",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Status of the bid associated with this spotnodepool."
+						}
+					},
+					{
+						"name": "won_count",
+						"int64": {
+							"computed_optional_required": "computed",
+							"description": "Number of won bids."
 						}
 					}
 				]
