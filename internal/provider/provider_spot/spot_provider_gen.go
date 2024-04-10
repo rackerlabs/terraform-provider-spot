@@ -12,7 +12,7 @@ import (
 func SpotProviderSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"rxtspot_token": schema.StringAttribute{
+			"token": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
 				Description:         "API token used to authenticate against Spot backend",
@@ -23,5 +23,5 @@ func SpotProviderSchema(ctx context.Context) schema.Schema {
 }
 
 type SpotModel struct {
-	RxtspotToken types.String `tfsdk:"rxtspot_token"`
+	Token types.String `tfsdk:"token"`
 }

@@ -20,8 +20,8 @@ func KubeconfigDataSourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Required:            true,
-				Description:         "ID of the cloudspace",
-				MarkdownDescription: "ID of the cloudspace",
+				Description:         "ID of the cloudspace, same as cloudspace name.",
+				MarkdownDescription: "ID of the cloudspace, same as cloudspace name.",
 			},
 			"kubeconfigs": schema.ListNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{

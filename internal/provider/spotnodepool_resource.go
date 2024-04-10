@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -110,22 +109,11 @@ func (r *spotnodepoolResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 	tflog.Debug(ctx, "Created spotnodepool", map[string]any{"name": spotNodePool.ObjectMeta.Name})
-	data.Id = types.StringValue(getIDFromObjectMeta(spotNodePool.ObjectMeta))
-	data.CloudspaceName = types.StringValue(spotNodePool.Spec.CloudSpace)
-	data.ServerClass = types.StringValue(spotNodePool.Spec.ServerClass)
-	if spotNodePool.Spec.Desired != 0 {
-		data.DesiredServerCount = types.Int64Value(int64(spotNodePool.Spec.Desired))
-	} else {
-		data.DesiredServerCount = types.Int64Null()
-	}
-	floatBidPrice, err := strconv.ParseFloat(spotNodePool.Spec.BidPrice, 64)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse bid price returned from remote service", err.Error())
+	resp.Diagnostics.Append(setSpotnodepoolState(ctx, spotNodePool, &data)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	data.BidPrice = types.Float64Value(floatBidPrice)
-	data.ResourceVersion = types.StringValue(spotNodePool.ObjectMeta.ResourceVersion)
-	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -155,29 +143,11 @@ func (r *spotnodepoolResource) Read(ctx context.Context, req resource.ReadReques
 		resp.Diagnostics.AddError("Failed to get spotnodepool", err.Error())
 		return
 	}
-	data.Id = types.StringValue(getIDFromObjectMeta(spotNodePool.ObjectMeta))
-	data.CloudspaceName = types.StringValue(spotNodePool.Spec.CloudSpace)
-	data.ServerClass = types.StringValue(spotNodePool.Spec.ServerClass)
-	if spotNodePool.Spec.Desired != 0 {
-		data.DesiredServerCount = types.Int64Value(int64(spotNodePool.Spec.Desired))
-	} else {
-		data.DesiredServerCount = types.Int64Null()
-	}
-	floatBidPrice, err := strconv.ParseFloat(spotNodePool.Spec.BidPrice, 64)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse bid price returned from remote service", err.Error())
+	resp.Diagnostics.Append(setSpotnodepoolState(ctx, spotNodePool, &data)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	data.BidPrice = types.Float64Value(floatBidPrice)
-	var diags diag.Diagnostics
-	data.Autoscaling, diags = convertAutoscalingSpecToValue(ctx,
-		spotNodePool.Spec.Autoscaling, data.Autoscaling)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	data.ResourceVersion = types.StringValue(spotNodePool.ObjectMeta.ResourceVersion)
+	data.LastUpdated = types.StringNull()
 	tflog.Debug(ctx, "Updating local state", map[string]any{"spec": data})
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -197,7 +167,6 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	// TODO: Find the difference between state and plan and update only the changed fields using patch
-	// Update API call logic
 	autoscalingSpec, diags := convertAutoscalingValueToSpec(plan.Autoscaling)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
@@ -257,31 +226,11 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	tflog.Debug(ctx, "Updated spotnodepool", map[string]any{"name": spotNodePool.ObjectMeta.Name})
-	state.Id = types.StringValue(getIDFromObjectMeta(spotNodePool.ObjectMeta))
-	state.CloudspaceName = types.StringValue(spotNodePool.Spec.CloudSpace)
-	state.ServerClass = types.StringValue(spotNodePool.Spec.ServerClass)
-	if spotNodePool.Spec.Desired != 0 {
-		state.DesiredServerCount = types.Int64Value(int64(spotNodePool.Spec.Desired))
-	} else {
-		state.DesiredServerCount = types.Int64Null()
-
-	}
-	floatBidPrice, err := strconv.ParseFloat(spotNodePool.Spec.BidPrice, 64)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse bid price returned from remote service", err.Error())
+	resp.Diagnostics.Append(setSpotnodepoolState(ctx, spotNodePool, &state)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.BidPrice = types.Float64Value(floatBidPrice)
-	state.ResourceVersion = types.StringValue(spotNodePool.ObjectMeta.ResourceVersion)
-	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
-	state.Autoscaling, diags = convertAutoscalingSpecToValue(ctx,
-		spotNodePool.Spec.Autoscaling, plan.Autoscaling)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-	tflog.Debug(ctx, "Updating state of autoscaling attrib", map[string]interface{}{"spec": state})
+	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -340,16 +289,6 @@ func convertAutoscalingValueToSpec(
 			MaxNodes: 0,
 		}, diags
 	}
-	if !autoscalingValue.MinNodes.IsNull() && autoscalingValue.MinNodes.ValueInt64() == 0 {
-		diags.AddAttributeError(path.Root("autoscaling").AtName("min_nodes"),
-			"min_nodes should not be 0", "min_nodes should not be 0")
-		return ngpcv1.AutoscalingSpec{}, diags
-	}
-	if !autoscalingValue.MaxNodes.IsNull() && autoscalingValue.MaxNodes.ValueInt64() == 0 {
-		diags.AddAttributeError(path.Root("autoscaling").AtName("max_nodes"),
-			"max_nodes should not be 0", "max_nodes should not be 0")
-		return ngpcv1.AutoscalingSpec{}, diags
-	}
 
 	return ngpcv1.AutoscalingSpec{
 		Enabled:  true,
@@ -358,37 +297,62 @@ func convertAutoscalingValueToSpec(
 	}, diags
 }
 
-// convertAutoscalingSpecToValue converts the autoscaling spec from k8s type to value in terraform type
-func convertAutoscalingSpecToValue(
-	ctx context.Context, autoscalingSpec ngpcv1.AutoscalingSpec,
-	autoscalingPlan resource_spotnodepool.AutoscalingValue) (
-	resource_spotnodepool.AutoscalingValue, diag.Diagnostics) {
+func setSpotnodepoolState(ctx context.Context, spotnodepool *ngpcv1.SpotNodePool, state *resource_spotnodepool.SpotnodepoolModel) diag.Diagnostics {
 	var diags diag.Diagnostics
+	state.Id = types.StringValue(getIDFromObjectMeta(spotnodepool.ObjectMeta))
+	state.CloudspaceName = types.StringValue(spotnodepool.Spec.CloudSpace)
+	state.ServerClass = types.StringValue(spotnodepool.Spec.ServerClass)
+	if spotnodepool.Spec.Desired != 0 {
+		state.DesiredServerCount = types.Int64Value(int64(spotnodepool.Spec.Desired))
+	} else {
+		state.DesiredServerCount = types.Int64Null()
+	}
+	floatBidPrice, err := strconv.ParseFloat(spotnodepool.Spec.BidPrice, 64)
+	if err != nil {
+		diags.AddError("Failed to parse bid price returned from remote service", err.Error())
+		return diags
+	}
+	autoscalingSpec := spotnodepool.Spec.Autoscaling
 	if !autoscalingSpec.Enabled {
-		// User removed block from the tf spec, we make it null to
-		// match plan with state
-		return resource_spotnodepool.NewAutoscalingValueNull(), diags
+		state.Autoscaling = resource_spotnodepool.NewAutoscalingValueNull()
+	} else {
+		var minNodes, maxNodes basetypes.Int64Value
+		if autoscalingSpec.MinNodes == 0 {
+			minNodes = basetypes.NewInt64Null()
+		} else {
+			minNodes = types.Int64Value(int64(autoscalingSpec.MinNodes))
+		}
+		if autoscalingSpec.MaxNodes == 0 {
+			maxNodes = basetypes.NewInt64Null()
+		} else {
+			maxNodes = types.Int64Value(int64(autoscalingSpec.MaxNodes))
+		}
+		autoscalingObjVal, diagsAutoscaling := resource_spotnodepool.AutoscalingValue{
+			MinNodes: minNodes,
+			MaxNodes: maxNodes,
+		}.ToObjectValue(ctx)
+		diags.Append(diagsAutoscaling...)
+		if diags.HasError() {
+			return diags
+		}
+		autoscalingVal, diagsAutoscaling := resource_spotnodepool.NewAutoscalingValue(
+			autoscalingObjVal.AttributeTypes(ctx),
+			autoscalingObjVal.Attributes(),
+		)
+		diags.Append(diagsAutoscaling...)
+		if diags.HasError() {
+			return diags
+		}
+		state.Autoscaling = autoscalingVal
 	}
 
-	var minNodes, maxNodes basetypes.Int64Value
-	if autoscalingSpec.MinNodes == 0 {
-		minNodes = basetypes.NewInt64Null()
+	state.BidPrice = types.Float64Value(floatBidPrice)
+	state.ResourceVersion = types.StringValue(spotnodepool.ObjectMeta.ResourceVersion)
+	state.BidStatus = types.StringValue(spotnodepool.Status.BidStatus)
+	if spotnodepool.Status.WonCount != nil {
+		state.WonCount = types.Int64Value(int64(*spotnodepool.Status.WonCount))
 	} else {
-		minNodes = types.Int64Value(int64(autoscalingSpec.MinNodes))
+		state.WonCount = types.Int64Null()
 	}
-	if autoscalingSpec.MaxNodes == 0 {
-		maxNodes = basetypes.NewInt64Null()
-	} else {
-		maxNodes = types.Int64Value(int64(autoscalingSpec.MaxNodes))
-	}
-
-	autoscalingVal, diags := resource_spotnodepool.NewAutoscalingValue(
-		resource_spotnodepool.AutoscalingValue{}.AttributeTypes(ctx),
-		map[string]attr.Value{
-			"min_nodes": minNodes,
-			"max_nodes": maxNodes,
-		},
-	)
-	diags.Append(diags...)
-	return autoscalingVal, diags
+	return diags
 }

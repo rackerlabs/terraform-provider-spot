@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_cloudspace"
@@ -62,13 +65,26 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 
 	// Read API call logic
-	tflog.Debug(ctx, "Computing name, namespace using resource id", map[string]any{"id": data.Id.ValueString()})
-	name, namespace, err := getNameAndNamespaceFromId(data.Id.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
-		return
+	var err error
+	var id, name, namespace string
+	id = data.Id.ValueString()
+	if strings.Contains(id, "/") {
+		tflog.Debug(ctx, "Computing name, namespace using id", map[string]any{"id": id})
+		name, namespace, err = getNameAndNamespaceFromId(id)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
+			return
+		}
+	} else {
+		// In newer approach we dont include org ns in the id because users are not aware of org ns
+		name = id
+		namespace = os.Getenv("RXTSPOT_ORG_NS")
+		if namespace == "" {
+			resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
+			return
+		}
+		tflog.Debug(ctx, "Using namespace from environment", map[string]any{"namespace": namespace})
 	}
-	tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
 	err = d.client.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
@@ -81,11 +97,80 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 
 	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
 	data.Region = types.StringValue(cloudspace.Spec.Region)
+	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.Name = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.ApiServerEndpoint = types.StringValue(cloudspace.Status.APIServerEndpoint)
 	data.Health = types.StringValue(cloudspace.Status.Health)
 	data.Phase = types.StringValue(string(cloudspace.Status.Phase))
 	data.Reason = types.StringValue(cloudspace.Status.Reason)
+	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
+	data.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
+	if cloudspace.Spec.Webhook != "" {
+		// even if we dont set string value it becomes "" by default
+		// assume it as Null if it is not set
+		data.PreemptionWebhook = types.StringValue(cloudspace.Spec.Webhook)
+	} else {
+		data.PreemptionWebhook = types.StringNull()
+	}
+	var diags diag.Diagnostics
+	data.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var bidsSlice []datasource_cloudspace.BidsValue
+	for _, val := range cloudspace.Status.Bids {
+		var wonCount types.Int64
+		if val.WonCount != nil {
+			wonCount = types.Int64Value(int64(*val.WonCount))
+		} else {
+			wonCount = types.Int64Null()
+		}
+		bidObjVal, convertDiags := datasource_cloudspace.BidsValue{
+			BidName:  types.StringValue(val.BidName),
+			WonCount: wonCount,
+		}.ToObjectValue(ctx)
+		resp.Diagnostics.Append(convertDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		bidObjValuable, convertDiags := datasource_cloudspace.BidsType{}.ValueFromObject(ctx, bidObjVal)
+		resp.Diagnostics.Append(convertDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		bidsSlice = append(bidsSlice, bidObjValuable.(datasource_cloudspace.BidsValue))
+	}
+	data.Bids, diags = types.SetValueFrom(ctx, datasource_cloudspace.BidsValue{}.Type(ctx), bidsSlice)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var allocationsSlice []datasource_cloudspace.PendingAllocationsValue
+	for _, val := range cloudspace.Status.PendingAllocations {
+		allocObjVal, convertDiags := datasource_cloudspace.PendingAllocationsValue{
+			BidName:     types.StringValue(val.BidName),
+			ServerClass: types.StringValue(val.ServerClassName),
+			Count:       types.Int64Value(int64(val.Count)),
+		}.ToObjectValue(ctx)
+		resp.Diagnostics.Append(convertDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		allocObjValuable, convertDiags := datasource_cloudspace.PendingAllocationsType{}.ValueFromObject(ctx, allocObjVal)
+		resp.Diagnostics.Append(convertDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		allocationsSlice = append(allocationsSlice, allocObjValuable.(datasource_cloudspace.PendingAllocationsValue))
+	}
+	data.PendingAllocations, diags = types.SetValueFrom(ctx,
+		datasource_cloudspace.PendingAllocationsValue{}.Type(ctx), allocationsSlice)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	token := os.Getenv("RXTSPOT_TOKEN")
 	if token == "" {

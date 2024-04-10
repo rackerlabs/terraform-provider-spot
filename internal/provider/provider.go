@@ -54,7 +54,7 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	var strRxtSpotToken string
 	var tokenStringVal basetypes.StringValue
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("rxtspot_token"), &tokenStringVal)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("token"), &tokenStringVal)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -150,6 +150,7 @@ func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.Data
 	return []func() datasource.DataSource{
 		NewCloudspaceDataSource,
 		NewKubeconfigDataSource,
+		NewSpotnodepoolDataSource,
 	}
 }
 
