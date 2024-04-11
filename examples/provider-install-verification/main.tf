@@ -6,5 +6,11 @@ terraform {
   }
 }
 
-# Set the environemnt variable RXTSPOT_TOKEN to your Spot API token
-provider "spot" {}
+variable "token" {
+  description = "The rackspace spot token"
+  type        = string
+}
+
+provider "spot" {
+  token = var.token
+}
