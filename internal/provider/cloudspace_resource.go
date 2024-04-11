@@ -123,7 +123,7 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 	tflog.Info(ctx, "Created cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
-	diags := steCloudspaceState(ctx, cloudspace, &data)
+	diags := setCloudspaceState(ctx, cloudspace, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -162,7 +162,7 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 		resp.Diagnostics.AddError("Failed to get cloudspace", err.Error())
 		return
 	}
-	diags := steCloudspaceState(ctx, cloudspace, &data)
+	diags := setCloudspaceState(ctx, cloudspace, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -220,7 +220,7 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	tflog.Info(ctx, "Updated cloudspace", map[string]any{"name": data.CloudspaceName.ValueString()})
-	diags := steCloudspaceState(ctx, cloudspace, &data)
+	diags := setCloudspaceState(ctx, cloudspace, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -276,7 +276,7 @@ func (r *cloudspaceResource) ImportState(ctx context.Context, req resource.Impor
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func steCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, state *resource_cloudspace.CloudspaceModel) diag.Diagnostics {
+func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, state *resource_cloudspace.CloudspaceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	state.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
 	state.Region = types.StringValue(cloudspace.Spec.Region)

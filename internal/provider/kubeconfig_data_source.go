@@ -19,6 +19,8 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
+const auth0AppName = "NGPC UI"
+
 //go:embed kubeconfig.yaml.tmpl
 var kubeconfigTemplate string
 
@@ -119,13 +121,13 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		if auth0Client.Name == nil || auth0Client.ClientID == nil || auth0Client.Domain == nil {
 			continue
 		}
-		if *auth0Client.Name == "NGPC CLI" {
+		if *auth0Client.Name == auth0AppName {
 			kubeconfigVars.OidcClientID = *auth0Client.ClientID
 			kubeconfigVars.OidcIssuerURL = fmt.Sprintf("https://%s/", *auth0Client.Domain)
 		}
 	}
 	if kubeconfigVars.OidcClientID == "" || kubeconfigVars.OidcIssuerURL == "" {
-		resp.Diagnostics.AddError("Failed to get oidc client id or issuer url", "Please check if NGPC CLI client is created in Auth0")
+		resp.Diagnostics.AddError("Failed to get oidc client id or issuer url", "Please check if client app is created in Auth0")
 		return
 	}
 	kubeconfigVars.OrgID = os.Getenv("RXTSPOT_ORG_ID")
