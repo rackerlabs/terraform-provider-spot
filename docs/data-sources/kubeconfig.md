@@ -8,8 +8,11 @@ description: |-
 
 # spot_kubeconfig Data Source
 
-This data source exposes **kubeconfig** associated with a cloudspace.
+This data source exposes a kubeconfig associated with a cloudspace. The generated kubeconfig includes the oidc context, which automatically refreshes the token when it expires, prompting users to perform an interactive login.
 
+```
+kubectl --kubeconfig=<path-to-kubeconfig> --context=<org-name>-<cloudspace-name>-oidc get pods
+```
 
 ## Example Usage
 
@@ -44,7 +47,6 @@ output "kubeconfig" {
   value = data.spot_kubeconfig.example.raw
 }
 ```
-
 
 ## Using kubeconfig data source with external providers
 
