@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -56,11 +57,13 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"cloudspace_name": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the cloudspace.",
 				MarkdownDescription: "The name of the cloudspace.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 63),
@@ -86,9 +89,11 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Default: booldefault.StaticBool(false),
 			},
 			"id": schema.StringAttribute{
+				Optional:            true,
 				Computed:            true,
 				Description:         "The id of the cloudspace",
 				MarkdownDescription: "The id of the cloudspace",
+				DeprecationMessage:  "Use the cloudspace_name attribute instead",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -99,6 +104,21 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The last time the cloudspace was updated.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The name of the cloudspace.",
+				MarkdownDescription: "The name of the cloudspace.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
+					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("cloudspace_name"), path.MatchRoot("id")}...),
 				},
 			},
 			"pending_allocations": schema.SetNestedAttribute{
@@ -139,14 +159,6 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"resource_version": schema.StringAttribute{
-				Computed:            true,
-				Description:         "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.",
-				MarkdownDescription: "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
 			"spotnodepool_ids": schema.ListAttribute{
 				ElementType:         types.StringType,
 				Computed:            true,
@@ -167,10 +179,10 @@ type CloudspaceModel struct {
 	HacontrolPlane      types.Bool   `tfsdk:"hacontrol_plane"`
 	Id                  types.String `tfsdk:"id"`
 	LastUpdated         types.String `tfsdk:"last_updated"`
+	Name                types.String `tfsdk:"name"`
 	PendingAllocations  types.Set    `tfsdk:"pending_allocations"`
 	PreemptionWebhook   types.String `tfsdk:"preemption_webhook"`
 	Region              types.String `tfsdk:"region"`
-	ResourceVersion     types.String `tfsdk:"resource_version"`
 	SpotnodepoolIds     types.List   `tfsdk:"spotnodepool_ids"`
 }
 

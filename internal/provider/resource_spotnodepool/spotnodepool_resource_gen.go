@@ -104,6 +104,7 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 				Computed:            true,
 				Description:         "The id of the spotnodepool.",
 				MarkdownDescription: "The id of the spotnodepool.",
+				DeprecationMessage:  "Use the name attribute instead",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -116,10 +117,10 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"resource_version": schema.StringAttribute{
+			"name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.",
-				MarkdownDescription: "The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.",
+				Description:         "The name of the spotnodepool.",
+				MarkdownDescription: "The name of the spotnodepool.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -152,7 +153,7 @@ type SpotnodepoolModel struct {
 	DesiredServerCount types.Int64      `tfsdk:"desired_server_count"`
 	Id                 types.String     `tfsdk:"id"`
 	LastUpdated        types.String     `tfsdk:"last_updated"`
-	ResourceVersion    types.String     `tfsdk:"resource_version"`
+	Name               types.String     `tfsdk:"name"`
 	ServerClass        types.String     `tfsdk:"server_class"`
 	WonCount           types.Int64      `tfsdk:"won_count"`
 }

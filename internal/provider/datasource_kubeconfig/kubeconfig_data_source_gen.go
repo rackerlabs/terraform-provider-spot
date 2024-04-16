@@ -5,11 +5,15 @@ package datasource_kubeconfig
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -18,10 +22,23 @@ import (
 func KubeconfigDataSourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"cloudspace_name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the cloudspace",
+				MarkdownDescription: "Name of the cloudspace",
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
+					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("cloudspace_name"), path.MatchRoot("id")}...),
+				},
+			},
 			"id": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Description:         "ID of the cloudspace, same as cloudspace name.",
 				MarkdownDescription: "ID of the cloudspace, same as cloudspace name.",
+				DeprecationMessage:  "Use the cloudspace_name attribute instead",
 			},
 			"kubeconfigs": schema.ListNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
@@ -104,9 +121,10 @@ func KubeconfigDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type KubeconfigModel struct {
-	Id          types.String `tfsdk:"id"`
-	Kubeconfigs types.List   `tfsdk:"kubeconfigs"`
-	Raw         types.String `tfsdk:"raw"`
+	CloudspaceName types.String `tfsdk:"cloudspace_name"`
+	Id             types.String `tfsdk:"id"`
+	Kubeconfigs    types.List   `tfsdk:"kubeconfigs"`
+	Raw            types.String `tfsdk:"raw"`
 }
 
 var _ basetypes.ObjectTypable = KubeconfigsType{}

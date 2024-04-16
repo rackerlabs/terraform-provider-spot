@@ -3,21 +3,37 @@ package provider
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func generateRandomUUID() (string, error) {
+	var err error
+	var randomUUID uuid.UUID
+	for i := 0; i < 5; i++ {
+		randomUUID, err = uuid.NewRandom()
+		if err == nil {
+			return randomUUID.String(), nil
+		}
+	}
+	return "", err
+}
+
+// Deprecated: Use name value in place of id instead.
 // getIDFromObjectMeta returns id from object meta
 // id format: namespace/name
 func getIDFromObjectMeta(meta metav1.ObjectMeta) string {
 	return meta.Namespace + "/" + meta.Name
 }
 
+// Deprecated: Use getNameFromId() instead.
 // getNameAndNamespaceFromId returns name and namespace from id of the
 // resource or data source stored in a state
 // id format: namespace/name
@@ -27,6 +43,35 @@ func getNameAndNamespaceFromId(id string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid id %s", id)
 	}
 	return parts[1], parts[0], nil
+}
+
+// getNameFromId returns name from id of the resource or data source stored in a state
+// id format: namespace/name, this function ignores namespace.
+func getNameFromId(id string) (string, error) {
+	parts := strings.Split(id, "/")
+	if len(parts) != 2 {
+		return id, nil
+	}
+	return parts[1], nil
+}
+
+// getNameFromNameOrId returns name from resource name or resource id
+// We are phasing out the use of resource id and using name instead.
+// For backward compatibility, we are using resource id if name is not provided.
+func getNameFromNameOrId(name, id string) (string, error) {
+	if name != "" {
+		return name, nil
+	}
+	return getNameFromId(id)
+}
+
+func getNamespaceFromEnv() (string, error) {
+	// TODO: Find a better way to get namespace from provider shared state/config
+	namespace := os.Getenv("RXTSPOT_ORG_NS")
+	if namespace == "" {
+		return "", errors.New("RXTSPOT_ORG_NS is not set")
+	}
+	return namespace, nil
 }
 
 // FindNamespaceForOrganization returns namespace for organization

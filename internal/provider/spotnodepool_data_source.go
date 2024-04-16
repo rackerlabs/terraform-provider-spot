@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
@@ -64,16 +63,20 @@ func (d *spotnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	// Read API call logic
-	name := data.Id.ValueString()
-	namespace := os.Getenv("RXTSPOT_ORG_NS")
-	if namespace == "" {
-		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
+	name, err := getNameFromNameOrId(data.Name.ValueString(), data.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get name from id", err.Error())
 		return
 	}
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace from env", err.Error())
+		return
+	}
+	// Read API call logic
 	tflog.Info(ctx, "Getting spotnodepool", map[string]any{"name": name, "namespace": namespace})
 	spotNodePool := &ngpcv1.SpotNodePool{}
-	err := d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
+	err = d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get spotnodepool", err.Error())
 		return
@@ -89,7 +92,8 @@ func (d *spotnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 func setSpotnodepoolDataSourceState(ctx context.Context, spotnodepool *ngpcv1.SpotNodePool, state *datasource_spotnodepool.SpotnodepoolModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	state.Id = types.StringValue(getIDFromObjectMeta(spotnodepool.ObjectMeta))
+	state.Id = types.StringValue(spotnodepool.ObjectMeta.Name)
+	state.Name = types.StringValue(spotnodepool.ObjectMeta.Name)
 	state.CloudspaceName = types.StringValue(spotnodepool.Spec.CloudSpace)
 	state.ServerClass = types.StringValue(spotnodepool.Spec.ServerClass)
 	if spotnodepool.Spec.Desired != 0 {

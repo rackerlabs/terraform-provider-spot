@@ -8,4 +8,4 @@ terraform.tfstate.backup
 *.log
 TODO.md
 .terraform/**
-
+main.tf

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
@@ -66,25 +65,17 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 
 	// Read API call logic
 	var err error
-	var id, name, namespace string
-	id = data.Id.ValueString()
-	if strings.Contains(id, "/") {
-		tflog.Debug(ctx, "Computing name, namespace using id", map[string]any{"id": id})
-		name, namespace, err = getNameAndNamespaceFromId(id)
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
-			return
-		}
-	} else {
-		// In newer approach we dont include org ns in the id because users are not aware of org ns
-		name = id
-		namespace = os.Getenv("RXTSPOT_ORG_NS")
-		if namespace == "" {
-			resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
-			return
-		}
-		tflog.Debug(ctx, "Using namespace from environment", map[string]any{"namespace": namespace})
+	name, err := getNameFromNameOrId(data.Name.ValueString(), data.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get name", err.Error())
+		return
 	}
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
+		return
+	}
+	tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
 	err = d.client.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
@@ -95,7 +86,7 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	data.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
+	data.Id = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.Region = types.StringValue(cloudspace.Spec.Region)
 	data.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	data.Name = types.StringValue(cloudspace.ObjectMeta.Name)

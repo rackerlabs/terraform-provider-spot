@@ -5,11 +5,15 @@ package datasource_spotnodepool
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -59,9 +63,22 @@ func SpotnodepoolDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The desired number of servers in the node pool.",
 			},
 			"id": schema.StringAttribute{
-				Required:            true,
-				Description:         "ID of the spotnodepool",
-				MarkdownDescription: "ID of the spotnodepool",
+				Optional:            true,
+				Computed:            true,
+				Description:         "ID of the spotnodepool, same as name.",
+				MarkdownDescription: "ID of the spotnodepool, same as name.",
+				DeprecationMessage:  "Use the name attribute instead",
+			},
+			"name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the spotnodepool",
+				MarkdownDescription: "Name of the spotnodepool",
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
+					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("id")}...),
+				},
 			},
 			"server_class": schema.StringAttribute{
 				Computed:            true,
@@ -84,6 +101,7 @@ type SpotnodepoolModel struct {
 	CloudspaceName     types.String     `tfsdk:"cloudspace_name"`
 	DesiredServerCount types.Int64      `tfsdk:"desired_server_count"`
 	Id                 types.String     `tfsdk:"id"`
+	Name               types.String     `tfsdk:"name"`
 	ServerClass        types.String     `tfsdk:"server_class"`
 	WonCount           types.Int64      `tfsdk:"won_count"`
 }

@@ -5,11 +5,15 @@ package datasource_cloudspace
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -42,9 +46,11 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"cloudspace_name": schema.StringAttribute{
+				Optional:            true,
 				Computed:            true,
 				Description:         "Name of the cloudspace",
 				MarkdownDescription: "Name of the cloudspace",
+				DeprecationMessage:  "Use the name attribute instead",
 			},
 			"first_ready_timestamp": schema.StringAttribute{
 				Computed:            true,
@@ -62,9 +68,11 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Health indicates if CloudSpace has a working APIServer and available nodes",
 			},
 			"id": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Description:         "ID of the cloudspace, same as cloudspace name.",
 				MarkdownDescription: "ID of the cloudspace, same as cloudspace name.",
+				DeprecationMessage:  "Use the name attribute instead",
 			},
 			"kubeconfig": schema.StringAttribute{
 				Computed:            true,
@@ -73,10 +81,15 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				DeprecationMessage:  "Use the kubeconfig data source instead",
 			},
 			"name": schema.StringAttribute{
+				Optional:            true,
 				Computed:            true,
 				Description:         "Name of the cloudspace",
 				MarkdownDescription: "Name of the cloudspace",
-				DeprecationMessage:  "Use the cloudspace_name attribute instead",
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
+					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("cloudspace_name"), path.MatchRoot("id")}...),
+				},
 			},
 			"pending_allocations": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{

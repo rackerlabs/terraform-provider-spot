@@ -42,9 +42,9 @@ resource "spot_spotnodepool" "example" {
 ### Read-Only
 
 - `bid_status` (String) Status of the bid associated with this spotnodepool.
-- `id` (String) The id of the spotnodepool.
+- `id` (String, Deprecated) The id of the spotnodepool.
 - `last_updated` (String) The last time the spotnodepool was updated.
-- `resource_version` (String) The version of the resource known to local state. This is used to determine if the resource is modified outside of terraform.
+- `name` (String) The name of the spotnodepool.
 - `won_count` (Number) Number of won bids.
 
 <a id="nestedatt--autoscaling"></a>

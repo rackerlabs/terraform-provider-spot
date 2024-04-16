@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"strings"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -70,32 +69,19 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	token := os.Getenv("RXTSPOT_TOKEN")
-	if token == "" {
-		resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN environment variable")
+	// TODO: Add validation such that either name or id is required
+	// Remove required constraint from id
+	name, err := getNameFromNameOrId(data.CloudspaceName.ValueString(), data.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get name", err.Error())
 		return
 	}
-	var name, namespace string
-	var err error
-	id := data.Id.ValueString()
-	if strings.Contains(id, "/") {
-		tflog.Debug(ctx, "Computing name, namespace using resource id", map[string]any{"id": id})
-		name, namespace, err = getNameAndNamespaceFromId(id)
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
-			return
-		}
-		tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
-	} else {
-		// In newer approach we dont include org ns in the id because users are not aware of org ns
-		name = id
-		namespace = os.Getenv("RXTSPOT_ORG_NS")
-		if namespace == "" {
-			resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
-			return
-		}
-		tflog.Debug(ctx, "Using namespace from environment", map[string]any{"namespace": namespace})
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
+		return
 	}
+	tflog.Debug(ctx, "Getting cloudspace", map[string]interface{}{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
 	err = d.client.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
@@ -105,9 +91,19 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.AddError("Failed to get cloudspace", err.Error())
 		return
 	}
+	// TODO: Use wait_until_ready attribute with timeouts to wait for cloudspace to become ready
+	if cloudspace.Status.APIServerEndpoint == "" {
+		resp.Diagnostics.AddError("Failed to get api server endpoint", "Please wait while cloudspace becomes ready")
+		return
+	}
 	auth0ClientApps, err := d.client.Organizer().GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
+		return
+	}
+	token := os.Getenv("RXTSPOT_TOKEN")
+	if token == "" {
+		resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN environment variable")
 		return
 	}
 	kubeconfigVars := KubeconfigVars{
@@ -148,6 +144,8 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	data.Raw = types.StringValue(kubeconfigBlob)
+	data.CloudspaceName = types.StringValue(cloudspace.Name)
+	data.Id = types.StringValue(cloudspace.Name)
 
 	tokenKubecfg, diags := datasource_kubeconfig.KubeconfigsValue{
 		Cluster:  types.StringValue(kubeconfigVars.ClusterName),

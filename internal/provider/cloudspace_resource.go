@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
@@ -24,9 +23,7 @@ import (
 var _ resource.Resource = (*cloudspaceResource)(nil)
 var _ resource.ResourceWithConfigure = (*cloudspaceResource)(nil)
 var _ resource.ResourceWithImportState = (*cloudspaceResource)(nil)
-
-// TODO: Implement ResourceWithConfigValidators for region validation
-// var _ resource.ResourceWithConfigValidators = (*cloudspaceResource)(nil)
+var _ resource.ResourceWithModifyPlan = (*cloudspaceResource)(nil)
 
 func NewCloudspaceResource() resource.Resource {
 	return &cloudspaceResource{}
@@ -62,6 +59,31 @@ func (r *cloudspaceResource) Configure(ctx context.Context, req resource.Configu
 	r.client = client
 }
 
+func (r *cloudspaceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	var regionVal types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribRegion), &regionVal)...)
+	if !regionVal.IsNull() && !regionVal.IsUnknown() {
+		regionsList, err := listRegions(ctx, r.client)
+		if err != nil {
+			resp.Diagnostics.AddWarning("Failed to validate region", err.Error())
+		} else {
+			var validRegion bool
+			var regionNames = make([]string, len(regionsList))
+			for i, region := range regionsList {
+				if region.Name == regionVal.ValueString() {
+					validRegion = true
+				}
+				regionNames[i] = region.Name
+			}
+			if !validRegion {
+				resp.Diagnostics.AddAttributeError(path.Root(attribRegion), "Invalid region",
+					fmt.Sprintf("Allowed values are: %v", regionNames))
+				return
+			}
+		}
+	}
+}
+
 func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data resource_cloudspace.CloudspaceModel
 
@@ -71,34 +93,22 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	namespace := os.Getenv("RXTSPOT_ORG_NS")
-	if namespace == "" {
-		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
-		return
+	name := data.CloudspaceName.ValueString()
+	if name == "" {
+		name = data.Name.ValueString()
 	}
-	tflog.Debug(ctx, "Using namespace from environment", map[string]any{"namespace": namespace})
 
-	regionsList := ngpcv1.RegionList{}
-	err := r.client.List(ctx, &regionsList)
+	name, err := getNameFromNameOrId(name, data.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get regions", err.Error())
+		resp.Diagnostics.AddError("Failed to get name", err.Error())
 		return
 	}
-	var validRegion bool
-	for _, region := range regionsList.Items {
-		if region.Name == data.Region.ValueString() {
-			validRegion = true
-			break
-		}
-	}
-	if !validRegion {
-		regionNames := make([]string, len(regionsList.Items))
-		for i, region := range regionsList.Items {
-			regionNames[i] = region.Name
-		}
-		resp.Diagnostics.AddAttributeError(path.Root("region"), "Invalid region", fmt.Sprintf("Allowed values are: %v", regionNames))
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
 		return
 	}
+	tflog.Debug(ctx, "Creating cloudspace", map[string]any{"name": name, "namespace": namespace})
 
 	cloudspace := &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{
@@ -106,7 +116,7 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 			APIVersion: "ngpc.rxt.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      data.CloudspaceName.ValueString(),
+			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: ngpcv1.CloudSpaceSpec{
@@ -128,10 +138,10 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, keyResourceVersion, []byte(cloudspace.ObjectMeta.ResourceVersion))...)
 	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	// TODO: Use "wait_until_ready" attribute to wait for the cloudspace to be ready
 	// Refer:  https://github.com/hashicorp/terraform-provider-kubernetes/blob/main/kubernetes/resource_kubernetes_deployment_v1.go#L246
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	tflog.Debug(ctx, "Updated local state")
 }
@@ -145,14 +155,25 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	// Read API call logic
-	tflog.Debug(ctx, "Computing name, namespace using resource id", map[string]any{"id": data.Id.ValueString()})
-	name, namespace, err := getNameAndNamespaceFromId(data.Id.ValueString())
+	// TODO: Add validation such that either name or cloudspace_name is required
+	// Remove required constraint from cloudspace_name
+	name := data.CloudspaceName.ValueString()
+	if name == "" {
+		name = data.Name.ValueString()
+	}
+	name, err := getNameFromNameOrId(name, data.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
+		resp.Diagnostics.AddError("Failed to get name", err.Error())
 		return
 	}
-	tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
+		return
+	}
+
+	// Read API call logic
+	tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
 	err = r.client.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
@@ -167,6 +188,7 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, keyResourceVersion, []byte(cloudspace.ObjectMeta.ResourceVersion))...)
 	data.LastUpdated = types.StringNull()
 
 	// Save updated data into Terraform state
@@ -174,26 +196,40 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data, curData resource_cloudspace.CloudspaceModel
+	var plan, state resource_cloudspace.CloudspaceModel
 
 	// Read Terraform plan data into the model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(req.State.Get(ctx, &curData)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// 'curData' is state of the resource on remote(current state) and 'data' is planned state(new state) of the resource
-	tflog.Debug(ctx, "Computing name, namespace using resource id", map[string]any{"id": data.Id.ValueString()})
-	name, namespace, err := getNameAndNamespaceFromId(data.Id.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
-		return
-	}
-	tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
+	// 'state' is state of the resource on remote(current state) and 'data' is planned state(new state) of the resource
 
+	name := state.CloudspaceName.ValueString()
+	if name == "" {
+		name = state.Name.ValueString()
+	}
+	name, err := getNameFromNameOrId(name, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get name", err.Error())
+		return
+	}
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
+		return
+	}
+
+	resourceVersionBytes, diags := req.Private.GetKey(ctx, keyResourceVersion)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resourceVersion := string(resourceVersionBytes)
 	// TODO: Find the difference between state and plan and update only the changed fields using patch
 	cloudspace := &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{
@@ -201,32 +237,32 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 			APIVersion: "ngpc.rxt.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			// TODO: Save resource version in the private state not in the public state
-			ResourceVersion: curData.ResourceVersion.ValueString(),
+			Name:            name,
+			Namespace:       namespace,
+			ResourceVersion: resourceVersion,
 		},
 		Spec: ngpcv1.CloudSpaceSpec{
-			Region:         data.Region.ValueString(),
+			Region:         plan.Region.ValueString(),
 			Cloud:          "default",
-			HAControlPlane: data.HacontrolPlane.ValueBool(),
-			Webhook:        data.PreemptionWebhook.ValueString(),
+			HAControlPlane: plan.HacontrolPlane.ValueBool(),
+			Webhook:        plan.PreemptionWebhook.ValueString(),
 		},
 	}
-	tflog.Debug(ctx, "Updating cloudspace", map[string]any{"name": name})
+	tflog.Debug(ctx, "Updating cloudspace", map[string]any{"name": name, "namespace": namespace})
 	err = r.client.Update(ctx, cloudspace)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update cloudspace", err.Error())
 		return
 	}
-	tflog.Info(ctx, "Updated cloudspace", map[string]any{"name": data.CloudspaceName.ValueString()})
-	diags := setCloudspaceState(ctx, cloudspace, &data)
+	tflog.Info(ctx, "Updated cloudspace", map[string]any{"name": name})
+	diags = setCloudspaceState(ctx, cloudspace, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, keyResourceVersion, []byte(cloudspace.ObjectMeta.ResourceVersion))...)
+	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *cloudspaceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -238,16 +274,23 @@ func (r *cloudspaceResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	// Delete API call logic
-	tflog.Debug(ctx, "Computing name, namespace using resource id", map[string]any{"id": data.Id.ValueString()})
-	name, namespace, err := getNameAndNamespaceFromId(data.Id.ValueString())
+	name := data.CloudspaceName.ValueString()
+	if name == "" {
+		name = data.Name.ValueString()
+	}
+	name, err := getNameFromNameOrId(name, data.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get name and namespace from id", err.Error())
+		resp.Diagnostics.AddError("Failed to get name", err.Error())
 		return
 	}
-	tflog.Debug(ctx, "Name, namespace using resource id", map[string]any{"name": name, "namespace": namespace})
+	namespace, err := getNamespaceFromEnv()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
+		return
+	}
 
-	tflog.Debug(ctx, "Deleting cloudspace", map[string]any{"name": name})
+	// Delete API call logic
+	tflog.Debug(ctx, "Deleting cloudspace", map[string]any{"name": name, "namespace": namespace})
 	err = r.client.Delete(ctx, &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CloudSpace",
@@ -262,23 +305,18 @@ func (r *cloudspaceResource) Delete(ctx context.Context, req resource.DeleteRequ
 		resp.Diagnostics.AddError("Failed to delete cloudspace", err.Error())
 		return
 	}
-	tflog.Info(ctx, "Deleted cloudspace", map[string]any{"name": data.CloudspaceName.ValueString()})
+	tflog.Info(ctx, "Deleted cloudspace", map[string]any{"name": name})
 }
 
 func (r *cloudspaceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Retrieve import ID and save to id attribute
-	namespace := os.Getenv("RXTSPOT_ORG_NS")
-	if namespace == "" {
-		resp.Diagnostics.AddError("Failed to get org namespace", "RXTSPOT_ORG_NS is not set")
-		return
-	}
-	req.ID = fmt.Sprintf("%s/%s", namespace, req.ID)
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
 func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, state *resource_cloudspace.CloudspaceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	state.Id = types.StringValue(getIDFromObjectMeta(cloudspace.ObjectMeta))
+	state.Id = types.StringValue(cloudspace.ObjectMeta.Name)
+	state.Name = types.StringValue(cloudspace.ObjectMeta.Name)
+	state.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	state.Region = types.StringValue(cloudspace.Spec.Region)
 	state.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
 	if cloudspace.Spec.Webhook != "" {
@@ -288,8 +326,6 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	} else {
 		state.PreemptionWebhook = types.StringNull()
 	}
-	state.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
-	state.ResourceVersion = types.StringValue(cloudspace.ObjectMeta.ResourceVersion)
 	state.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
 	state.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
 	diags.Append(diags...)
