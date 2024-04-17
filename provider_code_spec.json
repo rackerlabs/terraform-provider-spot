@@ -1196,12 +1196,12 @@
 						}
 					},
 					{
-						"name": "provider",
+						"name": "region_provider",
 						"single_nested": {
 							"computed_optional_required": "computed",
 							"attributes": [
 								{
-									"name": "type",
+									"name": "provider_type",
 									"string": {
 										"computed_optional_required": "computed",
 										"description": "Actual infrastructure backing the region"
@@ -1334,12 +1334,12 @@
 						}
 					},
 					{
-						"name": "provider",
+						"name": "serverclass_provider",
 						"single_nested": {
 							"computed_optional_required": "computed",
 							"attributes": [
 								{
-									"name": "type",
+									"name": "provider_type",
 									"string": {
 										"computed_optional_required": "computed",
 										"description": "Actual infrastructure backing the server class"

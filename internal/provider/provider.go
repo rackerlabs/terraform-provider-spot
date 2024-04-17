@@ -151,6 +151,10 @@ func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.Data
 		NewCloudspaceDataSource,
 		NewKubeconfigDataSource,
 		NewSpotnodepoolDataSource,
+		NewRegionDataSource,
+		NewRegionsDataSource,
+		NewServerclassDataSource,
+		NewServerclassesDataSource,
 	}
 }
 

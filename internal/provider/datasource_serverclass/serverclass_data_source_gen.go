@@ -63,26 +63,6 @@ func ServerclassDataSourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
-			"provider": schema.SingleNestedAttribute{
-				Attributes: map[string]schema.Attribute{
-					"flavor_id": schema.StringAttribute{
-						Computed:            true,
-						Description:         "Name of the flavor",
-						MarkdownDescription: "Name of the flavor",
-					},
-					"type": schema.StringAttribute{
-						Computed:            true,
-						Description:         "Actual infrastructure backing the server class",
-						MarkdownDescription: "Actual infrastructure backing the server class",
-					},
-				},
-				CustomType: ProviderType{
-					ObjectType: types.ObjectType{
-						AttrTypes: ProviderValue{}.AttributeTypes(ctx),
-					},
-				},
-				Computed: true,
-			},
 			"region": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Specifies the region where the servers belonging to this ServerClass resides in",
@@ -100,6 +80,26 @@ func ServerclassDataSourceSchema(ctx context.Context) schema.Schema {
 				CustomType: ResourcesType{
 					ObjectType: types.ObjectType{
 						AttrTypes: ResourcesValue{}.AttributeTypes(ctx),
+					},
+				},
+				Computed: true,
+			},
+			"serverclass_provider": schema.SingleNestedAttribute{
+				Attributes: map[string]schema.Attribute{
+					"flavor_id": schema.StringAttribute{
+						Computed:            true,
+						Description:         "Name of the flavor",
+						MarkdownDescription: "Name of the flavor",
+					},
+					"provider_type": schema.StringAttribute{
+						Computed:            true,
+						Description:         "Actual infrastructure backing the server class",
+						MarkdownDescription: "Actual infrastructure backing the server class",
+					},
+				},
+				CustomType: ServerclassProviderType{
+					ObjectType: types.ObjectType{
+						AttrTypes: ServerclassProviderValue{}.AttributeTypes(ctx),
 					},
 				},
 				Computed: true,
@@ -155,16 +155,16 @@ func ServerclassDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type ServerclassModel struct {
-	Availability    types.String         `tfsdk:"availability"`
-	Category        types.String         `tfsdk:"category"`
-	DisplayName     types.String         `tfsdk:"display_name"`
-	FlavorType      types.String         `tfsdk:"flavor_type"`
-	Name            types.String         `tfsdk:"name"`
-	OnDemandPricing OnDemandPricingValue `tfsdk:"on_demand_pricing"`
-	Provider        ProviderValue        `tfsdk:"provider"`
-	Region          types.String         `tfsdk:"region"`
-	Resources       ResourcesValue       `tfsdk:"resources"`
-	Status          StatusValue          `tfsdk:"status"`
+	Availability        types.String             `tfsdk:"availability"`
+	Category            types.String             `tfsdk:"category"`
+	DisplayName         types.String             `tfsdk:"display_name"`
+	FlavorType          types.String             `tfsdk:"flavor_type"`
+	Name                types.String             `tfsdk:"name"`
+	OnDemandPricing     OnDemandPricingValue     `tfsdk:"on_demand_pricing"`
+	Region              types.String             `tfsdk:"region"`
+	Resources           ResourcesValue           `tfsdk:"resources"`
+	ServerclassProvider ServerclassProviderValue `tfsdk:"serverclass_provider"`
+	Status              StatusValue              `tfsdk:"status"`
 }
 
 var _ basetypes.ObjectTypable = OnDemandPricingType{}
@@ -536,375 +536,6 @@ func (v OnDemandPricingValue) AttributeTypes(ctx context.Context) map[string]att
 	}
 }
 
-var _ basetypes.ObjectTypable = ProviderType{}
-
-type ProviderType struct {
-	basetypes.ObjectType
-}
-
-func (t ProviderType) Equal(o attr.Type) bool {
-	other, ok := o.(ProviderType)
-
-	if !ok {
-		return false
-	}
-
-	return t.ObjectType.Equal(other.ObjectType)
-}
-
-func (t ProviderType) String() string {
-	return "ProviderType"
-}
-
-func (t ProviderType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	attributes := in.Attributes()
-
-	flavorIdAttribute, ok := attributes["flavor_id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`flavor_id is missing from object`)
-
-		return nil, diags
-	}
-
-	flavorIdVal, ok := flavorIdAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`flavor_id expected to be basetypes.StringValue, was: %T`, flavorIdAttribute))
-	}
-
-	typeAttribute, ok := attributes["type"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`type is missing from object`)
-
-		return nil, diags
-	}
-
-	typeVal, ok := typeAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`type expected to be basetypes.StringValue, was: %T`, typeAttribute))
-	}
-
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return ProviderValue{
-		FlavorId:     flavorIdVal,
-		ProviderType: typeVal,
-		state:        attr.ValueStateKnown,
-	}, diags
-}
-
-func NewProviderValueNull() ProviderValue {
-	return ProviderValue{
-		state: attr.ValueStateNull,
-	}
-}
-
-func NewProviderValueUnknown() ProviderValue {
-	return ProviderValue{
-		state: attr.ValueStateUnknown,
-	}
-}
-
-func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ProviderValue, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
-	ctx := context.Background()
-
-	for name, attributeType := range attributeTypes {
-		attribute, ok := attributes[name]
-
-		if !ok {
-			diags.AddError(
-				"Missing ProviderValue Attribute Value",
-				"While creating a ProviderValue value, a missing attribute value was detected. "+
-					"A ProviderValue must contain values for all attributes, even if null or unknown. "+
-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("ProviderValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
-			)
-
-			continue
-		}
-
-		if !attributeType.Equal(attribute.Type(ctx)) {
-			diags.AddError(
-				"Invalid ProviderValue Attribute Type",
-				"While creating a ProviderValue value, an invalid attribute value was detected. "+
-					"A ProviderValue must use a matching attribute type for the value. "+
-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("ProviderValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
-					fmt.Sprintf("ProviderValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
-			)
-		}
-	}
-
-	for name := range attributes {
-		_, ok := attributeTypes[name]
-
-		if !ok {
-			diags.AddError(
-				"Extra ProviderValue Attribute Value",
-				"While creating a ProviderValue value, an extra attribute value was detected. "+
-					"A ProviderValue must not contain values beyond the expected attribute types. "+
-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("Extra ProviderValue Attribute Name: %s", name),
-			)
-		}
-	}
-
-	if diags.HasError() {
-		return NewProviderValueUnknown(), diags
-	}
-
-	flavorIdAttribute, ok := attributes["flavor_id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`flavor_id is missing from object`)
-
-		return NewProviderValueUnknown(), diags
-	}
-
-	flavorIdVal, ok := flavorIdAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`flavor_id expected to be basetypes.StringValue, was: %T`, flavorIdAttribute))
-	}
-
-	typeAttribute, ok := attributes["type"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`type is missing from object`)
-
-		return NewProviderValueUnknown(), diags
-	}
-
-	typeVal, ok := typeAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`type expected to be basetypes.StringValue, was: %T`, typeAttribute))
-	}
-
-	if diags.HasError() {
-		return NewProviderValueUnknown(), diags
-	}
-
-	return ProviderValue{
-		FlavorId:     flavorIdVal,
-		ProviderType: typeVal,
-		state:        attr.ValueStateKnown,
-	}, diags
-}
-
-func NewProviderValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ProviderValue {
-	object, diags := NewProviderValue(attributeTypes, attributes)
-
-	if diags.HasError() {
-		// This could potentially be added to the diag package.
-		diagsStrings := make([]string, 0, len(diags))
-
-		for _, diagnostic := range diags {
-			diagsStrings = append(diagsStrings, fmt.Sprintf(
-				"%s | %s | %s",
-				diagnostic.Severity(),
-				diagnostic.Summary(),
-				diagnostic.Detail()))
-		}
-
-		panic("NewProviderValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
-	}
-
-	return object
-}
-
-func (t ProviderType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	if in.Type() == nil {
-		return NewProviderValueNull(), nil
-	}
-
-	if !in.Type().Equal(t.TerraformType(ctx)) {
-		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
-	}
-
-	if !in.IsKnown() {
-		return NewProviderValueUnknown(), nil
-	}
-
-	if in.IsNull() {
-		return NewProviderValueNull(), nil
-	}
-
-	attributes := map[string]attr.Value{}
-
-	val := map[string]tftypes.Value{}
-
-	err := in.As(&val)
-
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range val {
-		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
-
-		if err != nil {
-			return nil, err
-		}
-
-		attributes[k] = a
-	}
-
-	return NewProviderValueMust(ProviderValue{}.AttributeTypes(ctx), attributes), nil
-}
-
-func (t ProviderType) ValueType(ctx context.Context) attr.Value {
-	return ProviderValue{}
-}
-
-var _ basetypes.ObjectValuable = ProviderValue{}
-
-type ProviderValue struct {
-	FlavorId     basetypes.StringValue `tfsdk:"flavor_id"`
-	ProviderType basetypes.StringValue `tfsdk:"type"`
-	state        attr.ValueState
-}
-
-func (v ProviderValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 2)
-
-	var val tftypes.Value
-	var err error
-
-	attrTypes["flavor_id"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["type"] = basetypes.StringType{}.TerraformType(ctx)
-
-	objectType := tftypes.Object{AttributeTypes: attrTypes}
-
-	switch v.state {
-	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 2)
-
-		val, err = v.FlavorId.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["flavor_id"] = val
-
-		val, err = v.ProviderType.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["type"] = val
-
-		if err := tftypes.ValidateValue(objectType, vals); err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		return tftypes.NewValue(objectType, vals), nil
-	case attr.ValueStateNull:
-		return tftypes.NewValue(objectType, nil), nil
-	case attr.ValueStateUnknown:
-		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
-	default:
-		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
-	}
-}
-
-func (v ProviderValue) IsNull() bool {
-	return v.state == attr.ValueStateNull
-}
-
-func (v ProviderValue) IsUnknown() bool {
-	return v.state == attr.ValueStateUnknown
-}
-
-func (v ProviderValue) String() string {
-	return "ProviderValue"
-}
-
-func (v ProviderValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"flavor_id": basetypes.StringType{},
-			"type":      basetypes.StringType{},
-		},
-		map[string]attr.Value{
-			"flavor_id": v.FlavorId,
-			"type":      v.ProviderType,
-		})
-
-	return objVal, diags
-}
-
-func (v ProviderValue) Equal(o attr.Value) bool {
-	other, ok := o.(ProviderValue)
-
-	if !ok {
-		return false
-	}
-
-	if v.state != other.state {
-		return false
-	}
-
-	if v.state != attr.ValueStateKnown {
-		return true
-	}
-
-	if !v.FlavorId.Equal(other.FlavorId) {
-		return false
-	}
-
-	if !v.ProviderType.Equal(other.ProviderType) {
-		return false
-	}
-
-	return true
-}
-
-func (v ProviderValue) Type(ctx context.Context) attr.Type {
-	return ProviderType{
-		basetypes.ObjectType{
-			AttrTypes: v.AttributeTypes(ctx),
-		},
-	}
-}
-
-func (v ProviderValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
-	return map[string]attr.Type{
-		"flavor_id": basetypes.StringType{},
-		"type":      basetypes.StringType{},
-	}
-}
-
 var _ basetypes.ObjectTypable = ResourcesType{}
 
 type ResourcesType struct {
@@ -1271,6 +902,375 @@ func (v ResourcesValue) AttributeTypes(ctx context.Context) map[string]attr.Type
 	return map[string]attr.Type{
 		"cpu":    basetypes.StringType{},
 		"memory": basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = ServerclassProviderType{}
+
+type ServerclassProviderType struct {
+	basetypes.ObjectType
+}
+
+func (t ServerclassProviderType) Equal(o attr.Type) bool {
+	other, ok := o.(ServerclassProviderType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t ServerclassProviderType) String() string {
+	return "ServerclassProviderType"
+}
+
+func (t ServerclassProviderType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	flavorIdAttribute, ok := attributes["flavor_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`flavor_id is missing from object`)
+
+		return nil, diags
+	}
+
+	flavorIdVal, ok := flavorIdAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`flavor_id expected to be basetypes.StringValue, was: %T`, flavorIdAttribute))
+	}
+
+	providerTypeAttribute, ok := attributes["provider_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`provider_type is missing from object`)
+
+		return nil, diags
+	}
+
+	providerTypeVal, ok := providerTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`provider_type expected to be basetypes.StringValue, was: %T`, providerTypeAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return ServerclassProviderValue{
+		FlavorId:     flavorIdVal,
+		ProviderType: providerTypeVal,
+		state:        attr.ValueStateKnown,
+	}, diags
+}
+
+func NewServerclassProviderValueNull() ServerclassProviderValue {
+	return ServerclassProviderValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewServerclassProviderValueUnknown() ServerclassProviderValue {
+	return ServerclassProviderValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewServerclassProviderValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ServerclassProviderValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing ServerclassProviderValue Attribute Value",
+				"While creating a ServerclassProviderValue value, a missing attribute value was detected. "+
+					"A ServerclassProviderValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ServerclassProviderValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid ServerclassProviderValue Attribute Type",
+				"While creating a ServerclassProviderValue value, an invalid attribute value was detected. "+
+					"A ServerclassProviderValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ServerclassProviderValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("ServerclassProviderValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra ServerclassProviderValue Attribute Value",
+				"While creating a ServerclassProviderValue value, an extra attribute value was detected. "+
+					"A ServerclassProviderValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra ServerclassProviderValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewServerclassProviderValueUnknown(), diags
+	}
+
+	flavorIdAttribute, ok := attributes["flavor_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`flavor_id is missing from object`)
+
+		return NewServerclassProviderValueUnknown(), diags
+	}
+
+	flavorIdVal, ok := flavorIdAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`flavor_id expected to be basetypes.StringValue, was: %T`, flavorIdAttribute))
+	}
+
+	providerTypeAttribute, ok := attributes["provider_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`provider_type is missing from object`)
+
+		return NewServerclassProviderValueUnknown(), diags
+	}
+
+	providerTypeVal, ok := providerTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`provider_type expected to be basetypes.StringValue, was: %T`, providerTypeAttribute))
+	}
+
+	if diags.HasError() {
+		return NewServerclassProviderValueUnknown(), diags
+	}
+
+	return ServerclassProviderValue{
+		FlavorId:     flavorIdVal,
+		ProviderType: providerTypeVal,
+		state:        attr.ValueStateKnown,
+	}, diags
+}
+
+func NewServerclassProviderValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ServerclassProviderValue {
+	object, diags := NewServerclassProviderValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewServerclassProviderValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t ServerclassProviderType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewServerclassProviderValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewServerclassProviderValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewServerclassProviderValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewServerclassProviderValueMust(ServerclassProviderValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t ServerclassProviderType) ValueType(ctx context.Context) attr.Value {
+	return ServerclassProviderValue{}
+}
+
+var _ basetypes.ObjectValuable = ServerclassProviderValue{}
+
+type ServerclassProviderValue struct {
+	FlavorId     basetypes.StringValue `tfsdk:"flavor_id"`
+	ProviderType basetypes.StringValue `tfsdk:"provider_type"`
+	state        attr.ValueState
+}
+
+func (v ServerclassProviderValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 2)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["flavor_id"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["provider_type"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.FlavorId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["flavor_id"] = val
+
+		val, err = v.ProviderType.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["provider_type"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v ServerclassProviderValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v ServerclassProviderValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v ServerclassProviderValue) String() string {
+	return "ServerclassProviderValue"
+}
+
+func (v ServerclassProviderValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	objVal, diags := types.ObjectValue(
+		map[string]attr.Type{
+			"flavor_id":     basetypes.StringType{},
+			"provider_type": basetypes.StringType{},
+		},
+		map[string]attr.Value{
+			"flavor_id":     v.FlavorId,
+			"provider_type": v.ProviderType,
+		})
+
+	return objVal, diags
+}
+
+func (v ServerclassProviderValue) Equal(o attr.Value) bool {
+	other, ok := o.(ServerclassProviderValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.FlavorId.Equal(other.FlavorId) {
+		return false
+	}
+
+	if !v.ProviderType.Equal(other.ProviderType) {
+		return false
+	}
+
+	return true
+}
+
+func (v ServerclassProviderValue) Type(ctx context.Context) attr.Type {
+	return ServerclassProviderType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v ServerclassProviderValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"flavor_id":     basetypes.StringType{},
+		"provider_type": basetypes.StringType{},
 	}
 }
 

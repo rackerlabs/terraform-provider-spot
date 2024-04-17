@@ -33,22 +33,22 @@ func RegionDataSourceSchema(ctx context.Context) schema.Schema {
 				Description:         "Name of the region",
 				MarkdownDescription: "Name of the region",
 			},
-			"provider": schema.SingleNestedAttribute{
+			"region_provider": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
+					"provider_type": schema.StringAttribute{
+						Computed:            true,
+						Description:         "Actual infrastructure backing the region",
+						MarkdownDescription: "Actual infrastructure backing the region",
+					},
 					"region_name": schema.StringAttribute{
 						Computed:            true,
 						Description:         "Name of the region",
 						MarkdownDescription: "Name of the region",
 					},
-					"type": schema.StringAttribute{
-						Computed:            true,
-						Description:         "Actual infrastructure backing the region",
-						MarkdownDescription: "Actual infrastructure backing the region",
-					},
 				},
-				CustomType: ProviderType{
+				CustomType: RegionProviderType{
 					ObjectType: types.ObjectType{
-						AttrTypes: ProviderValue{}.AttributeTypes(ctx),
+						AttrTypes: RegionProviderValue{}.AttributeTypes(ctx),
 					},
 				},
 				Computed: true,
@@ -58,20 +58,20 @@ func RegionDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type RegionModel struct {
-	Country     types.String  `tfsdk:"country"`
-	Description types.String  `tfsdk:"description"`
-	Name        types.String  `tfsdk:"name"`
-	Provider    ProviderValue `tfsdk:"provider"`
+	Country        types.String        `tfsdk:"country"`
+	Description    types.String        `tfsdk:"description"`
+	Name           types.String        `tfsdk:"name"`
+	RegionProvider RegionProviderValue `tfsdk:"region_provider"`
 }
 
-var _ basetypes.ObjectTypable = ProviderType{}
+var _ basetypes.ObjectTypable = RegionProviderType{}
 
-type ProviderType struct {
+type RegionProviderType struct {
 	basetypes.ObjectType
 }
 
-func (t ProviderType) Equal(o attr.Type) bool {
-	other, ok := o.(ProviderType)
+func (t RegionProviderType) Equal(o attr.Type) bool {
+	other, ok := o.(RegionProviderType)
 
 	if !ok {
 		return false
@@ -80,14 +80,32 @@ func (t ProviderType) Equal(o attr.Type) bool {
 	return t.ObjectType.Equal(other.ObjectType)
 }
 
-func (t ProviderType) String() string {
-	return "ProviderType"
+func (t RegionProviderType) String() string {
+	return "RegionProviderType"
 }
 
-func (t ProviderType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+func (t RegionProviderType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
+
+	providerTypeAttribute, ok := attributes["provider_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`provider_type is missing from object`)
+
+		return nil, diags
+	}
+
+	providerTypeVal, ok := providerTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`provider_type expected to be basetypes.StringValue, was: %T`, providerTypeAttribute))
+	}
 
 	regionNameAttribute, ok := attributes["region_name"]
 
@@ -107,48 +125,30 @@ func (t ProviderType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 			fmt.Sprintf(`region_name expected to be basetypes.StringValue, was: %T`, regionNameAttribute))
 	}
 
-	typeAttribute, ok := attributes["type"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`type is missing from object`)
-
-		return nil, diags
-	}
-
-	typeVal, ok := typeAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`type expected to be basetypes.StringValue, was: %T`, typeAttribute))
-	}
-
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	return ProviderValue{
+	return RegionProviderValue{
+		ProviderType: providerTypeVal,
 		RegionName:   regionNameVal,
-		ProviderType: typeVal,
 		state:        attr.ValueStateKnown,
 	}, diags
 }
 
-func NewProviderValueNull() ProviderValue {
-	return ProviderValue{
+func NewRegionProviderValueNull() RegionProviderValue {
+	return RegionProviderValue{
 		state: attr.ValueStateNull,
 	}
 }
 
-func NewProviderValueUnknown() ProviderValue {
-	return ProviderValue{
+func NewRegionProviderValueUnknown() RegionProviderValue {
+	return RegionProviderValue{
 		state: attr.ValueStateUnknown,
 	}
 }
 
-func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ProviderValue, diag.Diagnostics) {
+func NewRegionProviderValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (RegionProviderValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
@@ -159,11 +159,11 @@ func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string
 
 		if !ok {
 			diags.AddError(
-				"Missing ProviderValue Attribute Value",
-				"While creating a ProviderValue value, a missing attribute value was detected. "+
-					"A ProviderValue must contain values for all attributes, even if null or unknown. "+
+				"Missing RegionProviderValue Attribute Value",
+				"While creating a RegionProviderValue value, a missing attribute value was detected. "+
+					"A RegionProviderValue must contain values for all attributes, even if null or unknown. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("ProviderValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+					fmt.Sprintf("RegionProviderValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
 			)
 
 			continue
@@ -171,12 +171,12 @@ func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string
 
 		if !attributeType.Equal(attribute.Type(ctx)) {
 			diags.AddError(
-				"Invalid ProviderValue Attribute Type",
-				"While creating a ProviderValue value, an invalid attribute value was detected. "+
-					"A ProviderValue must use a matching attribute type for the value. "+
+				"Invalid RegionProviderValue Attribute Type",
+				"While creating a RegionProviderValue value, an invalid attribute value was detected. "+
+					"A RegionProviderValue must use a matching attribute type for the value. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("ProviderValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
-					fmt.Sprintf("ProviderValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+					fmt.Sprintf("RegionProviderValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("RegionProviderValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
 			)
 		}
 	}
@@ -186,17 +186,35 @@ func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string
 
 		if !ok {
 			diags.AddError(
-				"Extra ProviderValue Attribute Value",
-				"While creating a ProviderValue value, an extra attribute value was detected. "+
-					"A ProviderValue must not contain values beyond the expected attribute types. "+
+				"Extra RegionProviderValue Attribute Value",
+				"While creating a RegionProviderValue value, an extra attribute value was detected. "+
+					"A RegionProviderValue must not contain values beyond the expected attribute types. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("Extra ProviderValue Attribute Name: %s", name),
+					fmt.Sprintf("Extra RegionProviderValue Attribute Name: %s", name),
 			)
 		}
 	}
 
 	if diags.HasError() {
-		return NewProviderValueUnknown(), diags
+		return NewRegionProviderValueUnknown(), diags
+	}
+
+	providerTypeAttribute, ok := attributes["provider_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`provider_type is missing from object`)
+
+		return NewRegionProviderValueUnknown(), diags
+	}
+
+	providerTypeVal, ok := providerTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`provider_type expected to be basetypes.StringValue, was: %T`, providerTypeAttribute))
 	}
 
 	regionNameAttribute, ok := attributes["region_name"]
@@ -206,7 +224,7 @@ func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string
 			"Attribute Missing",
 			`region_name is missing from object`)
 
-		return NewProviderValueUnknown(), diags
+		return NewRegionProviderValueUnknown(), diags
 	}
 
 	regionNameVal, ok := regionNameAttribute.(basetypes.StringValue)
@@ -217,37 +235,19 @@ func NewProviderValue(attributeTypes map[string]attr.Type, attributes map[string
 			fmt.Sprintf(`region_name expected to be basetypes.StringValue, was: %T`, regionNameAttribute))
 	}
 
-	typeAttribute, ok := attributes["type"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`type is missing from object`)
-
-		return NewProviderValueUnknown(), diags
-	}
-
-	typeVal, ok := typeAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`type expected to be basetypes.StringValue, was: %T`, typeAttribute))
-	}
-
 	if diags.HasError() {
-		return NewProviderValueUnknown(), diags
+		return NewRegionProviderValueUnknown(), diags
 	}
 
-	return ProviderValue{
+	return RegionProviderValue{
+		ProviderType: providerTypeVal,
 		RegionName:   regionNameVal,
-		ProviderType: typeVal,
 		state:        attr.ValueStateKnown,
 	}, diags
 }
 
-func NewProviderValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ProviderValue {
-	object, diags := NewProviderValue(attributeTypes, attributes)
+func NewRegionProviderValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) RegionProviderValue {
+	object, diags := NewRegionProviderValue(attributeTypes, attributes)
 
 	if diags.HasError() {
 		// This could potentially be added to the diag package.
@@ -261,15 +261,15 @@ func NewProviderValueMust(attributeTypes map[string]attr.Type, attributes map[st
 				diagnostic.Detail()))
 		}
 
-		panic("NewProviderValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+		panic("NewRegionProviderValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
 	}
 
 	return object
 }
 
-func (t ProviderType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t RegionProviderType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	if in.Type() == nil {
-		return NewProviderValueNull(), nil
+		return NewRegionProviderValueNull(), nil
 	}
 
 	if !in.Type().Equal(t.TerraformType(ctx)) {
@@ -277,11 +277,11 @@ func (t ProviderType) ValueFromTerraform(ctx context.Context, in tftypes.Value) 
 	}
 
 	if !in.IsKnown() {
-		return NewProviderValueUnknown(), nil
+		return NewRegionProviderValueUnknown(), nil
 	}
 
 	if in.IsNull() {
-		return NewProviderValueNull(), nil
+		return NewRegionProviderValueNull(), nil
 	}
 
 	attributes := map[string]attr.Value{}
@@ -304,35 +304,43 @@ func (t ProviderType) ValueFromTerraform(ctx context.Context, in tftypes.Value) 
 		attributes[k] = a
 	}
 
-	return NewProviderValueMust(ProviderValue{}.AttributeTypes(ctx), attributes), nil
+	return NewRegionProviderValueMust(RegionProviderValue{}.AttributeTypes(ctx), attributes), nil
 }
 
-func (t ProviderType) ValueType(ctx context.Context) attr.Value {
-	return ProviderValue{}
+func (t RegionProviderType) ValueType(ctx context.Context) attr.Value {
+	return RegionProviderValue{}
 }
 
-var _ basetypes.ObjectValuable = ProviderValue{}
+var _ basetypes.ObjectValuable = RegionProviderValue{}
 
-type ProviderValue struct {
+type RegionProviderValue struct {
+	ProviderType basetypes.StringValue `tfsdk:"provider_type"`
 	RegionName   basetypes.StringValue `tfsdk:"region_name"`
-	ProviderType basetypes.StringValue `tfsdk:"type"`
 	state        attr.ValueState
 }
 
-func (v ProviderValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+func (v RegionProviderValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
 	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["provider_type"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["region_name"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["type"] = basetypes.StringType{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
 		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.ProviderType.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["provider_type"] = val
 
 		val, err = v.RegionName.ToTerraformValue(ctx)
 
@@ -341,14 +349,6 @@ func (v ProviderValue) ToTerraformValue(ctx context.Context) (tftypes.Value, err
 		}
 
 		vals["region_name"] = val
-
-		val, err = v.ProviderType.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["type"] = val
 
 		if err := tftypes.ValidateValue(objectType, vals); err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
@@ -364,36 +364,36 @@ func (v ProviderValue) ToTerraformValue(ctx context.Context) (tftypes.Value, err
 	}
 }
 
-func (v ProviderValue) IsNull() bool {
+func (v RegionProviderValue) IsNull() bool {
 	return v.state == attr.ValueStateNull
 }
 
-func (v ProviderValue) IsUnknown() bool {
+func (v RegionProviderValue) IsUnknown() bool {
 	return v.state == attr.ValueStateUnknown
 }
 
-func (v ProviderValue) String() string {
-	return "ProviderValue"
+func (v RegionProviderValue) String() string {
+	return "RegionProviderValue"
 }
 
-func (v ProviderValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+func (v RegionProviderValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	objVal, diags := types.ObjectValue(
 		map[string]attr.Type{
-			"region_name": basetypes.StringType{},
-			"type":        basetypes.StringType{},
+			"provider_type": basetypes.StringType{},
+			"region_name":   basetypes.StringType{},
 		},
 		map[string]attr.Value{
-			"region_name": v.RegionName,
-			"type":        v.ProviderType,
+			"provider_type": v.ProviderType,
+			"region_name":   v.RegionName,
 		})
 
 	return objVal, diags
 }
 
-func (v ProviderValue) Equal(o attr.Value) bool {
-	other, ok := o.(ProviderValue)
+func (v RegionProviderValue) Equal(o attr.Value) bool {
+	other, ok := o.(RegionProviderValue)
 
 	if !ok {
 		return false
@@ -407,28 +407,28 @@ func (v ProviderValue) Equal(o attr.Value) bool {
 		return true
 	}
 
-	if !v.RegionName.Equal(other.RegionName) {
+	if !v.ProviderType.Equal(other.ProviderType) {
 		return false
 	}
 
-	if !v.ProviderType.Equal(other.ProviderType) {
+	if !v.RegionName.Equal(other.RegionName) {
 		return false
 	}
 
 	return true
 }
 
-func (v ProviderValue) Type(ctx context.Context) attr.Type {
-	return ProviderType{
+func (v RegionProviderValue) Type(ctx context.Context) attr.Type {
+	return RegionProviderType{
 		basetypes.ObjectType{
 			AttrTypes: v.AttributeTypes(ctx),
 		},
 	}
 }
 
-func (v ProviderValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+func (v RegionProviderValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"region_name": basetypes.StringType{},
-		"type":        basetypes.StringType{},
+		"provider_type": basetypes.StringType{},
+		"region_name":   basetypes.StringType{},
 	}
 }
