@@ -67,7 +67,7 @@ func getNameFromNameOrId(name, id string) (string, error) {
 }
 
 func getNamespaceFromEnv() (string, error) {
-	// TODO: Find a better way to get namespace from provider shared state/config
+	// TODO: Find a better way to get value of the namespace from provider.go
 	namespace := os.Getenv("RXTSPOT_ORG_NS")
 	if namespace == "" {
 		return "", errors.New("RXTSPOT_ORG_NS is not set")

@@ -69,8 +69,6 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// TODO: Add validation such that either name or id is required
-	// Remove required constraint from id
 	name, err := getNameFromNameOrId(data.CloudspaceName.ValueString(), data.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get name", err.Error())

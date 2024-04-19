@@ -22,7 +22,7 @@
 					{
 						"name": "id",
 						"string": {
-							"computed_optional_required": "computed_optional",
+							"computed_optional_required": "computed",
 							"description": "The id of the cloudspace",
 							"deprecation_message": "Use the cloudspace_name attribute instead",
 							"plan_modifiers": [
@@ -100,7 +100,7 @@
 												"path": "github.com/hashicorp/terraform-plugin-framework/path"
 											}
 										],
-										"schema_definition": "stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot(\"name\"), path.MatchRoot(\"cloudspace_name\"), path.MatchRoot(\"id\")}...)"
+										"schema_definition": "stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot(\"name\"), path.MatchRoot(\"cloudspace_name\")}...)"
 									}
 								}
 							]

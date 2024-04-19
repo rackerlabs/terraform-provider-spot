@@ -67,7 +67,6 @@ func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 	serverclasses := serverclassList.Items
-	// TODO: Implement filters
 	if !data.Filters.IsNull() {
 		var filterValues []datasource_serverclasses.FiltersValue
 		resp.Diagnostics.Append(data.Filters.ElementsAs(ctx, &filterValues, false)...)

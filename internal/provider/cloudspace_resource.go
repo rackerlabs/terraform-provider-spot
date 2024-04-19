@@ -154,9 +154,6 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	// TODO: Add validation such that either name or cloudspace_name is required
-	// Remove required constraint from cloudspace_name
 	name := data.CloudspaceName.ValueString()
 	if name == "" {
 		name = data.Name.ValueString()

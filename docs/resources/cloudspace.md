@@ -33,7 +33,6 @@ resource "spot_cloudspace" "example" {
 
 - `cloudspace_name` (String) The name of the cloudspace.
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
-- `id` (String, Deprecated) The id of the cloudspace
 - `name` (String) The name of the cloudspace.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
 
@@ -41,6 +40,7 @@ resource "spot_cloudspace" "example" {
 
 - `bids` (Attributes Set) (see [below for nested schema](#nestedatt--bids))
 - `first_ready_timestamp` (String) The time when the cloudspace was first ready.
+- `id` (String, Deprecated) The id of the cloudspace
 - `last_updated` (String) The last time the cloudspace was updated.
 - `pending_allocations` (Attributes Set) (see [below for nested schema](#nestedatt--pending_allocations))
 - `spotnodepool_ids` (List of String) IDs of the spotnodepools associated with the cloudspace.

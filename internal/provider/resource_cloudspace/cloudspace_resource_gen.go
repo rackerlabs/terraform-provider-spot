@@ -89,7 +89,6 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Default: booldefault.StaticBool(false),
 			},
 			"id": schema.StringAttribute{
-				Optional:            true,
 				Computed:            true,
 				Description:         "The id of the cloudspace",
 				MarkdownDescription: "The id of the cloudspace",
@@ -118,7 +117,7 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 63),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
-					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("cloudspace_name"), path.MatchRoot("id")}...),
+					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("cloudspace_name")}...),
 				},
 			},
 			"pending_allocations": schema.SetNestedAttribute{
