@@ -40,8 +40,8 @@ func RegionsDataSourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Description:         "List of filters, each filter is applied to the list of resource. Hence the results match all the specified filters. All the filters are ANDed.",
-				MarkdownDescription: "List of filters, each filter is applied to the list of resource. Hence the results match all the specified filters. All the filters are ANDed.",
+				Description:         "List of filters.",
+				MarkdownDescription: "List of filters.",
 			},
 			"id": schema.StringAttribute{
 				Optional:            true,

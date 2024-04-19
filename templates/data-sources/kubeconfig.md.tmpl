@@ -11,7 +11,7 @@ description: |-
 This data source exposes a kubeconfig associated with a cloudspace. The generated kubeconfig includes the oidc context, which automatically refreshes the token when it expires, prompting users to perform an interactive login.
 
 ```
-kubectl --kubeconfig=<path-to-kubeconfig> --context=<org-name>-<cloudspace-name>-oidc get pods
+kubectl --kubeconfig=path-to-kubeconfig --context=orgName-cloudspaceName-oidc get pods
 ```
 
 ## Example Usage

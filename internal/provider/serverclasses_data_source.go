@@ -140,6 +140,34 @@ func filterServerClasses(serverclasses []ngpcv1.ServerClass, name string, values
 			if memoryMatchesEpressions(values, serverclass.Spec.Resources.Memory) {
 				filteredServerClasses = append(filteredServerClasses, serverclass)
 			}
+		case "status.available":
+			for _, value := range values {
+				if matchesExpression(value, serverclass.Status.Available) {
+					filteredServerClasses = append(filteredServerClasses, serverclass)
+					break
+				}
+			}
+		case "status.reserved":
+			for _, value := range values {
+				if matchesExpression(value, serverclass.Status.Reserved) {
+					filteredServerClasses = append(filteredServerClasses, serverclass)
+					break
+				}
+			}
+		case "status.capacity":
+			for _, value := range values {
+				if matchesExpression(value, serverclass.Status.Capacity) {
+					filteredServerClasses = append(filteredServerClasses, serverclass)
+					break
+				}
+			}
+		case "status.last_auction":
+			for _, value := range values {
+				if matchesExpression(value, serverclass.Status.LastAuction) {
+					filteredServerClasses = append(filteredServerClasses, serverclass)
+					break
+				}
+			}
 		default:
 			return nil, fmt.Errorf("unsupported filter name %s", name)
 		}

@@ -29,8 +29,8 @@ func ServerclassesDataSourceSchema(ctx context.Context) schema.Schema {
 						"values": schema.SetAttribute{
 							ElementType:         types.StringType,
 							Required:            true,
-							Description:         "Set of values for the attribute, if any of the 'value' matches then the filter is considered to be matched",
-							MarkdownDescription: "Set of values for the attribute, if any of the 'value' matches then the filter is considered to be matched",
+							Description:         "If any of the 'value' matches, then the filter is considered to be matched. For numeric attributes like resources.cpu, resources.memory, and others, the values also support comparator expressions like >8GB, <=4, etc.",
+							MarkdownDescription: "If any of the 'value' matches, then the filter is considered to be matched. For numeric attributes like resources.cpu, resources.memory, and others, the values also support comparator expressions like >8GB, <=4, etc.",
 						},
 					},
 					CustomType: FiltersType{
@@ -40,8 +40,8 @@ func ServerclassesDataSourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Description:         "List of filters, each filter is applied to the list of resource. Hence the results match all the specified filters. All the filters are ANDed.",
-				MarkdownDescription: "List of filters, each filter is applied to the list of resource. Hence the results match all the specified filters. All the filters are ANDed.",
+				Description:         "List of filters",
+				MarkdownDescription: "List of filters",
 			},
 			"id": schema.StringAttribute{
 				Optional:            true,

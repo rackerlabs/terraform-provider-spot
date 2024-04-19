@@ -1245,7 +1245,7 @@
 						"name": "filters",
 						"list_nested": {
 							"computed_optional_required": "optional",
-							"description": "List of filters, each filter is applied to the list of resource. Hence the results match all the specified filters. All the filters are ANDed.",
+							"description": "List of filters.",
 							"nested_object": {
 								"attributes": [
 									{
@@ -1466,7 +1466,7 @@
 						"name": "filters",
 						"list_nested": {
 							"computed_optional_required": "optional",
-							"description": "List of filters, each filter is applied to the list of resource. Hence the results match all the specified filters. All the filters are ANDed.",
+							"description": "List of filters",
 							"nested_object": {
 								"attributes": [
 									{
@@ -1480,7 +1480,7 @@
 										"name": "values",
 										"set": {
 											"computed_optional_required": "required",
-											"description": "Set of values for the attribute, if any of the 'value' matches then the filter is considered to be matched",
+											"description": "If any of the 'value' matches, then the filter is considered to be matched. For numeric attributes like resources.cpu, resources.memory, and others, the values also support comparator expressions like >8GB, <=4, etc.",
 											"element_type": {
 												"string": {}
 											}
