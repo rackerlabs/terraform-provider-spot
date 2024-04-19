@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -124,4 +125,70 @@ func FindOrgName(ctx context.Context, client ngpc.Client, userJWT string, orgID 
 		}
 	}
 	return "", fmt.Errorf("organization %s not found", orgID)
+}
+
+func StrSliceContains(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesExpression[T int | float64](expression string, value T) bool {
+	expression = strings.TrimSpace(expression)
+
+	if operandStr, found := strings.CutPrefix(expression, "<"); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) < operand
+	}
+
+	if operandStr, found := strings.CutPrefix(expression, ">"); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) > operand
+	}
+
+	if operandStr, found := strings.CutPrefix(expression, "<="); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) <= operand
+	}
+
+	if operandStr, found := strings.CutPrefix(expression, ">="); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) >= operand
+	}
+
+	if operandStr, found := strings.CutPrefix(expression, "=="); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) == operand
+	}
+
+	if operandStr, found := strings.CutPrefix(expression, "!="); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) != operand
+	}
+	operand, err := strconv.ParseFloat(expression, 64)
+	if err != nil {
+		return false
+	}
+	return float64(value) == operand
 }

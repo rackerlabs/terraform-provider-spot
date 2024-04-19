@@ -2,6 +2,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -63,11 +66,27 @@ func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadR
 		resp.Diagnostics.AddError("Failed to list server classes", err.Error())
 		return
 	}
-
+	serverclasses := serverclassList.Items
 	// TODO: Implement filters
+	if !data.Filters.IsNull() {
+		var filterValues []datasource_serverclasses.FiltersValue
+		resp.Diagnostics.Append(data.Filters.ElementsAs(ctx, &filterValues, false)...)
+		for _, filterValue := range filterValues {
+			var values []string
+			resp.Diagnostics.Append(filterValue.Values.ElementsAs(ctx, &values, false)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			serverclasses, err = filterServerClasses(serverclasses, filterValue.Name.ValueString(), values)
+			if err != nil {
+				resp.Diagnostics.AddError("Failed to filter server classes", err.Error())
+				return
+			}
+		}
+	}
 
-	serverclassNames := make([]string, 0, len(serverclassList.Items))
-	for _, serverclass := range serverclassList.Items {
+	serverclassNames := make([]string, 0, len(serverclasses))
+	for _, serverclass := range serverclasses {
 		serverclassNames = append(serverclassNames, serverclass.Name)
 	}
 	serverclassListValue, diags := types.ListValueFrom(ctx, types.StringType, serverclassNames)
@@ -76,4 +95,83 @@ func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func filterServerClasses(serverclasses []ngpcv1.ServerClass, name string, values []string) ([]ngpcv1.ServerClass, error) {
+	var filteredServerClasses []ngpcv1.ServerClass
+	for _, serverclass := range serverclasses {
+		switch name {
+		case "name":
+			if StrSliceContains(values, serverclass.Name) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "availability":
+			if StrSliceContains(values, serverclass.Spec.Availability) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "category":
+			if StrSliceContains(values, serverclass.Spec.Category) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "display_name":
+			if StrSliceContains(values, serverclass.Spec.DisplayName) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "flavor_type":
+			if StrSliceContains(values, serverclass.Spec.FlavorType) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "serverclass_provider.provider_type":
+			if StrSliceContains(values, serverclass.Spec.Provider.ProviderType) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "serverclass_provider.flavor_id":
+			if StrSliceContains(values, serverclass.Spec.Provider.ProviderFlavorID) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "serverclass_provider.region":
+			if StrSliceContains(values, serverclass.Spec.Region) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "resources.cpu":
+			if cpuMatchesEpressions(values, serverclass.Spec.Resources.CPU) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		case "resources.memory":
+			if memoryMatchesEpressions(values, serverclass.Spec.Resources.Memory) {
+				filteredServerClasses = append(filteredServerClasses, serverclass)
+			}
+		default:
+			return nil, fmt.Errorf("unsupported filter name %s", name)
+		}
+	}
+	return filteredServerClasses, nil
+}
+
+func memoryMatchesEpressions(expressions []string, memory string) bool {
+	memory = strings.TrimSuffix(memory, "GB")
+	floatMemory, err := strconv.ParseFloat(memory, 64)
+	if err != nil {
+		return false
+	}
+	for _, expression := range expressions {
+		expression = strings.TrimSuffix(strings.TrimSpace(expression), "GB")
+		if matchesExpression(expression, floatMemory) {
+			return true
+		}
+	}
+	return false
+}
+
+func cpuMatchesEpressions(expressions []string, serverclassCPU string) bool {
+	cpus, err := strconv.Atoi(serverclassCPU)
+	if err != nil {
+		return false
+	}
+	for _, expression := range expressions {
+		if matchesExpression(strings.TrimSpace(expression), cpus) {
+			return true
+		}
+	}
+	return false
 }
