@@ -139,20 +139,12 @@ func StrSliceContains(slice []string, val string) bool {
 func matchesExpression[T int | float64](expression string, value T) bool {
 	expression = strings.TrimSpace(expression)
 
-	if operandStr, found := strings.CutPrefix(expression, "<"); found {
+	if operandStr, found := strings.CutPrefix(expression, "=="); found {
 		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
 		if err != nil {
 			return false
 		}
-		return float64(value) < operand
-	}
-
-	if operandStr, found := strings.CutPrefix(expression, ">"); found {
-		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
-		if err != nil {
-			return false
-		}
-		return float64(value) > operand
+		return float64(value) == operand
 	}
 
 	if operandStr, found := strings.CutPrefix(expression, "<="); found {
@@ -171,12 +163,20 @@ func matchesExpression[T int | float64](expression string, value T) bool {
 		return float64(value) >= operand
 	}
 
-	if operandStr, found := strings.CutPrefix(expression, "=="); found {
+	if operandStr, found := strings.CutPrefix(expression, "<"); found {
 		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
 		if err != nil {
 			return false
 		}
-		return float64(value) == operand
+		return float64(value) < operand
+	}
+
+	if operandStr, found := strings.CutPrefix(expression, ">"); found {
+		operand, err := strconv.ParseFloat(strings.TrimSpace(operandStr), 64)
+		if err != nil {
+			return false
+		}
+		return float64(value) > operand
 	}
 
 	if operandStr, found := strings.CutPrefix(expression, "!="); found {
