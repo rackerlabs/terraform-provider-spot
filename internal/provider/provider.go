@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -12,8 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/provider_spot"
-
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 )
 
 var _ provider.Provider = (*spotProvider)(nil)
@@ -155,6 +154,7 @@ func (p *spotProvider) DataSources(ctx context.Context) []func() datasource.Data
 		NewRegionsDataSource,
 		NewServerclassDataSource,
 		NewServerclassesDataSource,
+		NewOndemandnodepoolDataSource,
 	}
 }
 
@@ -162,5 +162,6 @@ func (p *spotProvider) Resources(ctx context.Context) []func() resource.Resource
 	return []func() resource.Resource{
 		NewCloudspaceResource,
 		NewSpotnodepoolResource,
+		NewOndemandnodepoolResource,
 	}
 }

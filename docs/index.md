@@ -74,7 +74,7 @@ Get started with Rackspace Spot by creating your first Spot Cloudspace. Follow t
 terraform {
   required_providers {
     spot = {
-      source  = "rackerlabs/spot"
+      source = "rackerlabs/spot"
     }
   }
 }

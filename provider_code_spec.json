@@ -677,6 +677,184 @@
 					}
 				]
 			}
+		},
+		{
+			"name": "ondemandnodepool",
+			"schema": {
+				"attributes": [					
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The name of the ondemandnodepool.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "last_updated",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The last time the ondemandnodepool was updated.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "cloudspace_name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The name of the cloudspace.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							],
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 63)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be valid kubernetes name\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "server_class",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The class of servers to use for the node pool.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "desired_server_count",
+						"int64": {
+							"computed_optional_required": "computed_optional",
+							"description": "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+											}
+										],
+										"schema_definition": "int64validator.AtLeast(1)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/path"
+											}
+										],
+										"schema_definition": "int64validator.ConflictsWith(path.MatchRelative().AtParent().AtName(\"autoscaling\"))"
+									}
+								}
+							]
+						}
+					},										
+					{
+						"name": "reserved_status",
+						"string": {
+							"computed_optional_required": "computed",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							],
+							"description": "Status of the bid associated with this ondemandnodepool."
+						}
+					},
+					{
+						"name": "reserved_count",
+						"int64": {
+							"computed_optional_required": "computed",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+											}
+										],
+										"schema_definition": "int64planmodifier.UseStateForUnknown()"
+									}
+								}
+							],
+							"description": "Number of won bids."
+						}
+					}
+				]
+			}
 		}
 	],
 	"datasources": [
@@ -1488,6 +1666,93 @@
 									}
 								]
 							}
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "ondemandnodepool",
+			"schema": {
+				"attributes": [			
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Name of the ondemandnodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 63)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be a valid kubernetes name\")"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/path"
+											}
+										],
+										"schema_definition": "stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot(\"name\"), path.MatchRoot(\"id\")}...)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "cloudspace_name",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The name of the cloudspace"
+						}
+					},
+					{
+						"name": "server_class",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The class of servers to use for the node pool."
+						}
+					},
+					{
+						"name": "desired_server_count",
+						"int64": {
+							"computed_optional_required": "computed",
+							"description": "The desired number of servers in the node pool."
+						}
+					},		
+					{
+						"name": "reserved_status",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Status of the bid associated with this ondemandnodepool."
+						}
+					},
+					{
+						"name": "reserved_count",
+						"int64": {
+							"computed_optional_required": "computed",
+							"description": "Number of won bids."
 						}
 					}
 				]
