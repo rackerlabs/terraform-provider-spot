@@ -41,6 +41,7 @@ output "csphase" {
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `health` (String) Health indicates if CloudSpace has a working APIServer and available nodes
 - `kubeconfig` (String, Deprecated) Kubeconfig blob
+- `ondemandnodepool_ids` (List of String) IDs of the ondemandnodepools associated with the cloudspace.
 - `pending_allocations` (Attributes Set) (see [below for nested schema](#nestedatt--pending_allocations))
 - `phase` (String) Phase of the cloudspace
 - `reason` (String) Reason contains the reason why the CloudSpace is in a certain phase.

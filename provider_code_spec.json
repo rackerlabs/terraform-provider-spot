@@ -492,7 +492,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The class of servers to use for the node pool.",
+							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -768,7 +768,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The class of servers to use for the node pool.",
+							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -1129,7 +1129,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The class of servers to use for the node pool."
+							"description": "The class of servers used for the node pool."
 						}
 					},
 					{
@@ -1715,7 +1715,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source."
+							"description": "The class of servers used for the node pool"
 						}
 					},
 					{
