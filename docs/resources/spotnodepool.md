@@ -55,38 +55,6 @@ Optional:
 - `max_nodes` (Number) The maximum number of nodes in the node pool.
 - `min_nodes` (Number) The minimum number of nodes in the node pool.
 
-### List of available server classes
-
-| Region          | Name              | Category       | CPU | Memory  |
-|-----------------|-------------------|----------------|-----|---------|
-| us-central-dfw-1| ch.vs1.2xlarge-dfw| Compute Heavy  | 16  | 30GB    |
-| us-central-dfw-1| ch.vs1.large-dfw  | Compute Heavy  | 4   | 7.5GB   |
-| us-central-dfw-1| ch.vs1.medium-dfw | Compute Heavy  | 2   | 3.75GB  |
-| us-central-dfw-1| ch.vs1.xlarge-dfw | Compute Heavy  | 8   | 15GB    |
-| us-central-dfw-1| gp.vs1.2xlarge-dfw| General Purpose| 16  | 60GB    |
-| us-central-dfw-1| gp.vs1.large-dfw  | General Purpose| 4   | 15GB    |
-| us-central-dfw-1| gp.vs1.medium-dfw | General Purpose| 2   | 3.75GB  |
-| us-central-dfw-1| gp.vs1.small-dfw  | General Purpose| 1   | 1GB     |
-| us-central-dfw-1| gp.vs1.xlarge-dfw | General Purpose| 8   | 30GB    |
-| us-central-dfw-1| mh.vs1.2xlarge-dfw| Memory Heavy   | 16  | 120GB   |
-| us-central-dfw-1| mh.vs1.large-dfw  | Memory Heavy   | 4   | 30GB    |
-| us-central-dfw-1| mh.vs1.medium-dfw | Memory Heavy   | 2   | 15GB    |
-| us-central-dfw-1| mh.vs1.xlarge-dfw | Memory Heavy   | 8   | 60GB    |
-| us-east-iad-1   | ch.vs1.2xlarge-iad| Compute Heavy  | 16  | 30GB    |
-| us-east-iad-1   | ch.vs1.large-iad  | Compute Heavy  | 4   | 7.5GB   |
-| us-east-iad-1   | ch.vs1.medium-iad | Compute Heavy  | 2   | 3.75GB  |
-| us-east-iad-1   | ch.vs1.xlarge-iad | Compute Heavy  | 8   | 15GB    |
-| us-east-iad-1   | gp.vs1.2xlarge-iad| General Purpose| 16  | 60GB    |
-| us-east-iad-1   | gp.vs1.large-iad  | General Purpose| 4   | 15GB    |
-| us-east-iad-1   | gp.vs1.medium-iad | General Purpose| 2   | 3.75GB  |
-| us-east-iad-1   | gp.vs1.small-iad  | General Purpose| 1   | 1GB     |
-| us-east-iad-1   | gp.vs1.xlarge-iad | General Purpose| 8   | 30GB    |
-| us-east-iad-1   | mh.vs1.2xlarge-iad| Memory Heavy   | 16  | 120GB   |
-| us-east-iad-1   | mh.vs1.large-iad  | Memory Heavy   | 4   | 30GB    |
-| us-east-iad-1   | mh.vs1.medium-iad | Memory Heavy   | 2   | 15GB    |
-| us-east-iad-1   | mh.vs1.xlarge-iad | Memory Heavy   | 8   | 60GB    |
-
-
 ## Import
 
 Import is supported using the following syntax:

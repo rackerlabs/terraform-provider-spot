@@ -12,8 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_cloudspace"
 	ktypes "k8s.io/apimachinery/pkg/types"
+
+	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_cloudspace"
 )
 
 var _ datasource.DataSource = (*cloudspaceDataSource)(nil)
@@ -105,6 +106,11 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	var diags diag.Diagnostics
 	data.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	data.OndemandnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.OnDemandRequests)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
