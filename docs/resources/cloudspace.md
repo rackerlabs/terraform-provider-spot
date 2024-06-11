@@ -65,10 +65,16 @@ Read-Only:
 
 ### Available Regions
 
-| Region             | Location                          |
-|--------------------|-----------------------------------|
-| `us-central-dfw-1` | US Central, Dallas Fort Worth, TX |
-| `us-east-iad-1`    | US East, Ashburn, VA              |
+To retrieve the list of available regions, you can utilize the `spot_regions` data source.
+
+```terraform
+data "spot_regions" "available" {
+}
+
+output "regions" {
+  value = data.spot_regions.available.names
+}
+```
 
 ## Import
 

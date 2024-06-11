@@ -14,17 +14,42 @@ Rackspace Spot delivers fully managed and pre-configured Kubernetes clusters, kn
 
 ## Authenticating with Rackspace Spot
 
-To use this provider, set an authentication token as an environment variable, obtainable via the Rackspace Spot dashboard, https://spot.rackspace.com.
+To use this provider, you will require an authentication token. You can obtain the token from the Rackspace Spot dashboard at https://spot.rackspace.com by navigating to the "API Access" section located on the left sidebar.
 
-- `RXTSPOT_TOKEN`:  This is the actual token value.
-- `RXTSPOT_TOKEN_FILE`: This is the absolute path to the file containing the token value.
+### Setting the Token in the Provider Configuration
 
-```bash
-export RXTSPOT_TOKEN=<rackspace-spot-token>
-# or
-export RXTSPOT_TOKEN_FILE=/path/to/token/file
+You can provide the authentication token in the provider configuration using the `token` attribute. It is recommended to use Terraform variables or other secure methods to store and reference the token value, rather than hard-coding it directly in your Terraform configuration files. This helps prevent accidental exposure of the token in version control systems.
+
+Example using a Terraform variable:
+
+```terraform
+variable "rackspace_spot_token" {
+  description = "Rackspace Spot authentication token"
+  type        = string
+  sensitive   = true
+}
+
+provider "spot" {
+  token = var.rackspace_spot_token
+}
 ```
-You can set the token directly in the provider configuration as shown below. However, it is recommended to use Terraform variables instead of hard-coding the token in your Terraform configuration files. This approach prevents accidental exposure of the token in version control.
+
+### Setting the Token using Environment Variables
+
+Alternatively, you can set the authentication token using environment variables:
+
+- `RXTSPOT_TOKEN`: Set this variable to the actual token value.
+- `RXTSPOT_TOKEN_FILE`: Set this variable to the absolute path of the file containing the token value.
+
+Example:
+
+```shell
+export RXTSPOT_TOKEN="your-rackspace-spot-token"
+# or
+export RXTSPOT_TOKEN_FILE="/path/to/token/file"
+```
+
+Remember to keep your authentication token secure and avoid committing it to version control systems. Use appropriate security measures, such as encrypting sensitive files or using secret management tools, to protect your token.
 
 ## Example Usage
 
@@ -40,7 +65,6 @@ terraform {
 }
 
 provider "spot" {
-  # overrides environment variables
   token = "<rxtspot_token>"
 }
 ```
@@ -61,14 +85,7 @@ Get started with Rackspace Spot by creating your first Spot Cloudspace. Follow t
    - Copy the **Access Token** provided on that page.
    - **Important:** Treat the access token as sensitive information. Avoid sharing it publicly.
 
-2. Set the copied token as an environment variable:
-
-   ```bash
-   echo "<your_access_token>" > ~/.rxtspot_token
-   export RXTSPOT_TOKEN_FILE=$HOME/.rxtspot_token
-   ```
-
-3. Create your terraform configuration file
+2. Create your terraform configuration file
 
 ```terraform
 terraform {
@@ -79,7 +96,15 @@ terraform {
   }
 }
 
-provider "spot" {}
+variable "rackspace_spot_token" {
+  description = "Rackspace Spot authentication token"
+  type        = string
+  sensitive   = true
+}
+
+provider "spot" {
+  token = var.rackspace_spot_token
+}
 
 # Example of cloudspace resource.
 resource "spot_cloudspace" "example" {
@@ -119,7 +144,6 @@ output "kubeconfig" {
 ```
 
 4. Use generated kubeconfig to access your cloudspace.
-   - The cloudspace phase must be healthy
 
 ## Know your Cloudspace
 
