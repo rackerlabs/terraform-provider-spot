@@ -91,6 +91,12 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("cloudspace_name"), path.MatchRoot("id")}...),
 				},
 			},
+			"ondemandnodepool_ids": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				Description:         "IDs of the ondemandnodepools associated with the cloudspace.",
+				MarkdownDescription: "IDs of the ondemandnodepools associated with the cloudspace.",
+			},
 			"pending_allocations": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -162,6 +168,7 @@ type CloudspaceModel struct {
 	Id                  types.String `tfsdk:"id"`
 	Kubeconfig          types.String `tfsdk:"kubeconfig"`
 	Name                types.String `tfsdk:"name"`
+	OndemandnodepoolIds types.List   `tfsdk:"ondemandnodepool_ids"`
 	PendingAllocations  types.Set    `tfsdk:"pending_allocations"`
 	Phase               types.String `tfsdk:"phase"`
 	PreemptionWebhook   types.String `tfsdk:"preemption_webhook"`

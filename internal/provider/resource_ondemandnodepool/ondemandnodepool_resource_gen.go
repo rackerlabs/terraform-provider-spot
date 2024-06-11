@@ -6,7 +6,6 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -35,11 +34,10 @@ func OndemandnodepoolResourceSchema(ctx context.Context) schema.Schema {
 			"desired_server_count": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
-				MarkdownDescription: "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
+				Description:         "The desired number of servers in the node pool.",
+				MarkdownDescription: "The desired number of servers in the node pool.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
-					int64validator.ConflictsWith(path.MatchRelative().AtParent().AtName("autoscaling")),
 				},
 			},
 			"last_updated": schema.StringAttribute{
@@ -60,16 +58,16 @@ func OndemandnodepoolResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"reserved_count": schema.Int64Attribute{
 				Computed:            true,
-				Description:         "Number of won bids.",
-				MarkdownDescription: "Number of won bids.",
+				Description:         "Number of reserved on-demand nodes.",
+				MarkdownDescription: "Number of reserved on-demand nodes.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"reserved_status": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Status of the bid associated with this ondemandnodepool.",
-				MarkdownDescription: "Status of the bid associated with this ondemandnodepool.",
+				Description:         "Status of the ondemandnodepool.",
+				MarkdownDescription: "Status of the ondemandnodepool.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

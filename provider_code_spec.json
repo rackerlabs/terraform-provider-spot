@@ -787,7 +787,7 @@
 						"name": "desired_server_count",
 						"int64": {
 							"computed_optional_required": "computed_optional",
-							"description": "The desired number of servers in the node pool. Should be removed if autoscaling is enabled.",
+							"description": "The desired number of servers in the node pool.",
 							"validators": [
 								{
 									"custom": {
@@ -798,20 +798,7 @@
 										],
 										"schema_definition": "int64validator.AtLeast(1)"
 									}
-								},
-								{
-									"custom": {
-										"imports": [
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-											},
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/path"
-											}
-										],
-										"schema_definition": "int64validator.ConflictsWith(path.MatchRelative().AtParent().AtName(\"autoscaling\"))"
-									}
-								}
+								}								
 							]
 						}
 					},										
@@ -831,7 +818,7 @@
 									}
 								}
 							],
-							"description": "Status of the bid associated with this ondemandnodepool."
+							"description": "Status of the ondemandnodepool."
 						}
 					},
 					{
@@ -850,7 +837,7 @@
 									}
 								}
 							],
-							"description": "Number of won bids."
+							"description": "Number of reserved on-demand nodes."
 						}
 					}
 				]
@@ -956,6 +943,16 @@
 						"list": {
 							"computed_optional_required": "computed",
 							"description": "IDs of the spotnodepools associated with the cloudspace.",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "ondemandnodepool_ids",
+						"list": {
+							"computed_optional_required": "computed",
+							"description": "IDs of the ondemandnodepools associated with the cloudspace.",
 							"element_type": {
 								"string": {}
 							}
@@ -1703,20 +1700,7 @@
 										],
 										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be a valid kubernetes name\")"
 									}
-								},
-								{
-									"custom": {
-										"imports": [
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-											},
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/path"
-											}
-										],
-										"schema_definition": "stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot(\"name\"), path.MatchRoot(\"id\")}...)"
-									}
-								}
+								}								
 							]
 						}
 					},
@@ -1731,7 +1715,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "The class of servers to use for the node pool."
+							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source."
 						}
 					},
 					{
@@ -1745,14 +1729,14 @@
 						"name": "reserved_status",
 						"string": {
 							"computed_optional_required": "computed",
-							"description": "Status of the bid associated with this ondemandnodepool."
+							"description": "Status of the ondemandnodepool."
 						}
 					},
 					{
 						"name": "reserved_count",
 						"int64": {
 							"computed_optional_required": "computed",
-							"description": "Number of won bids."
+							"description": "Number of reserved on-demand nodes."
 						}
 					}
 				]

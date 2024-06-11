@@ -5,7 +5,6 @@ package datasource_ondemandnodepool
 import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"regexp"
@@ -34,23 +33,22 @@ func OndemandnodepoolDataSourceSchema(ctx context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 63),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
-					stringvalidator.AtLeastOneOf(path.Expressions{path.MatchRoot("name"), path.MatchRoot("id")}...),
 				},
 			},
 			"reserved_count": schema.Int64Attribute{
 				Computed:            true,
-				Description:         "Number of won bids.",
-				MarkdownDescription: "Number of won bids.",
+				Description:         "Number of reserved on-demand nodes.",
+				MarkdownDescription: "Number of reserved on-demand nodes.",
 			},
 			"reserved_status": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Status of the bid associated with this ondemandnodepool.",
-				MarkdownDescription: "Status of the bid associated with this ondemandnodepool.",
+				Description:         "Status of the ondemandnodepool.",
+				MarkdownDescription: "Status of the ondemandnodepool.",
 			},
 			"server_class": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The class of servers to use for the node pool.",
-				MarkdownDescription: "The class of servers to use for the node pool.",
+				Description:         "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
+				MarkdownDescription: "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
 			},
 		},
 	}
