@@ -167,6 +167,14 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 					listplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"wait_until_ready": schema.BoolAttribute{
+				Optional:            true,
+				Description:         "Should wait until the cloudspace is ready before returning.",
+				MarkdownDescription: "Should wait until the cloudspace is ready before returning.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
@@ -183,6 +191,7 @@ type CloudspaceModel struct {
 	PreemptionWebhook   types.String `tfsdk:"preemption_webhook"`
 	Region              types.String `tfsdk:"region"`
 	SpotnodepoolIds     types.List   `tfsdk:"spotnodepool_ids"`
+	WaitUntilReady      types.Bool   `tfsdk:"wait_until_ready"`
 }
 
 var _ basetypes.ObjectTypable = BidsType{}

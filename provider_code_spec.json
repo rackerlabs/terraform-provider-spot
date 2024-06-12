@@ -378,6 +378,25 @@
 								]
 							}
 						}
+					},
+					{
+						"name": "wait_until_ready",
+						"bool": {
+							"computed_optional_required": "optional",
+							"description": "Should wait until the cloudspace is ready before returning.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+											}
+										],
+										"schema_definition": "boolplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
 					}
 				]
 			}
@@ -623,7 +642,7 @@
 								}
 							],
 							"description": "Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling.",
-							"validators" :[
+							"validators": [
 								{
 									"custom": {
 										"imports": [
@@ -681,7 +700,7 @@
 		{
 			"name": "ondemandnodepool",
 			"schema": {
-				"attributes": [					
+				"attributes": [
 					{
 						"name": "name",
 						"string": {
@@ -798,10 +817,10 @@
 										],
 										"schema_definition": "int64validator.AtLeast(1)"
 									}
-								}								
+								}
 							]
 						}
-					},										
+					},
 					{
 						"name": "reserved_status",
 						"string": {
@@ -1348,7 +1367,7 @@
 		{
 			"name": "region",
 			"schema": {
-				"attributes":[
+				"attributes": [
 					{
 						"name": "name",
 						"string": {
@@ -1594,7 +1613,7 @@
 									"name": "spot_pricing",
 									"single_nested": {
 										"computed_optional_required": "computed",
-										"attributes":[
+										"attributes": [
 											{
 												"name": "hammer_price_per_hour",
 												"string": {
@@ -1671,7 +1690,7 @@
 		{
 			"name": "ondemandnodepool",
 			"schema": {
-				"attributes": [			
+				"attributes": [
 					{
 						"name": "name",
 						"string": {
@@ -1700,7 +1719,7 @@
 										],
 										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be a valid kubernetes name\")"
 									}
-								}								
+								}
 							]
 						}
 					},
@@ -1724,7 +1743,7 @@
 							"computed_optional_required": "computed",
 							"description": "The desired number of servers in the node pool."
 						}
-					},		
+					},
 					{
 						"name": "reserved_status",
 						"string": {
