@@ -47,8 +47,8 @@ func OndemandnodepoolDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"server_class": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
-				MarkdownDescription: "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
+				Description:         "The class of servers used for the node pool",
+				MarkdownDescription: "The class of servers used for the node pool",
 			},
 		},
 	}

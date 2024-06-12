@@ -127,8 +127,8 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"server_class": schema.StringAttribute{
 				Required:            true,
-				Description:         "The class of servers to use for the node pool.",
-				MarkdownDescription: "The class of servers to use for the node pool.",
+				Description:         "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
+				MarkdownDescription: "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

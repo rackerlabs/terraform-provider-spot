@@ -82,8 +82,8 @@ func SpotnodepoolDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"server_class": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The class of servers to use for the node pool.",
-				MarkdownDescription: "The class of servers to use for the node pool.",
+				Description:         "The class of servers used for the node pool.",
+				MarkdownDescription: "The class of servers used for the node pool.",
 			},
 			"won_count": schema.Int64Attribute{
 				Computed:            true,
