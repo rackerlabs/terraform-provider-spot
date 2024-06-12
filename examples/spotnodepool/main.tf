@@ -13,6 +13,7 @@ resource "spot_cloudspace" "my-cloudspace" {
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
   preemption_webhook = "https://hooks.slack.com/services/TXX"
+  wait_until_ready   = true
 }
 
 resource "spot_spotnodepool" "example" {

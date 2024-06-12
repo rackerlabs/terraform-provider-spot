@@ -10,6 +10,7 @@ import (
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -89,10 +90,17 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.AddError("Failed to get cloudspace", err.Error())
 		return
 	}
-	// TODO: Use wait_until_ready attribute with timeouts to wait for cloudspace to become ready
 	if cloudspace.Status.APIServerEndpoint == "" {
-		resp.Diagnostics.AddError("Failed to get api server endpoint", "Please wait while cloudspace becomes ready")
-		return
+		// If APIServerEndpoint is empty then probably cloudspace is not ready
+		// TODO: Use user provided timeouts; see cloudspace resource for reference
+		tflog.Debug(ctx, "Waiting for cloudspace to be ready", map[string]interface{}{"name": name, "namespace": namespace})
+		maxRetries := uint64(30)
+		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, d.client, name, namespace), backoffStrategy)
+		if err != nil {
+			resp.Diagnostics.AddError("Cloudspace is not ready", err.Error())
+			return
+		}
 	}
 	auth0ClientApps, err := d.client.Organizer().GetAuth0Clients(ctx)
 	if err != nil {
