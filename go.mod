@@ -4,6 +4,7 @@ go 1.21.4
 
 require (
 	github.com/RSS-Engineering/ngpc-cp v0.0.0-00010101000000-000000000000
+	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-codegen-framework v0.3.1
@@ -12,7 +13,6 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
 	k8s.io/apimachinery v0.29.0
 )
 
