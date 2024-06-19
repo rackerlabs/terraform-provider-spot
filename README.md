@@ -1,4 +1,4 @@
-### Terraform Provider for Rackspace Spot
+# Terraform Provider for Rackspace Spot
 
 The Rackspace Spot Terraform Provider allows you to create and manage cloudspaces on [Rackspace Spot](https://spot.rackspace.com/).
 
