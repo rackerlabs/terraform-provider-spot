@@ -154,7 +154,7 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		}
 		backoffRetryConfig := getCloudSpaceReadyRetryConfig()
 		backoffRetryConfig.MaxElapsedTime = createTimeout
-		err := backoff.Retry(r.waitForCloudSpaceReady(ctx, name, namespace), backoffRetryConfig)
+		err := backoff.Retry(waitForCloudSpaceReady(ctx, r.client, name, namespace), backoffRetryConfig)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to wait for cloudspace to be ready", err.Error())
 			return
@@ -404,12 +404,12 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 }
 
 // This function returns retry function that waits for cloudspace to be ready
-func (r *cloudspaceResource) waitForCloudSpaceReady(ctx context.Context, name string, namespace string) backoff.Operation {
+func waitForCloudSpaceReady(ctx context.Context, client ngpc.Client, name string, namespace string) backoff.Operation {
 	// TODO: Is there non-polling based approach?
 	return func() error {
 		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 		cloudspace := &ngpcv1.CloudSpace{}
-		err := r.client.Get(ctx, ktypes.NamespacedName{
+		err := client.Get(ctx, ktypes.NamespacedName{
 			Name:      name,
 			Namespace: namespace,
 		}, cloudspace)
@@ -428,7 +428,7 @@ func (r *cloudspaceResource) waitForCloudSpaceReady(ctx context.Context, name st
 		case ngpcv1.CloudSpacePhaseDeleting:
 			return backoff.Permanent(fmt.Errorf("cloudspace %s is in %s phase", name, cloudspace.Status.Phase))
 		default:
-			tflog.Debug(ctx, "Cloudspace is not ready yet", map[string]any{"name": name, "phase": cloudspace.Status.Phase})
+			tflog.Info(ctx, "Cloudspace is not ready yet", map[string]any{"name": name, "phase": cloudspace.Status.Phase})
 			return fmt.Errorf("cloudspace %s is not ready yet", name)
 		}
 	}
