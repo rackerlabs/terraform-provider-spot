@@ -35,6 +35,8 @@ resource "spot_cloudspace" "example" {
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `name` (String) The name of the cloudspace.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+- `wait_until_ready` (Boolean) Should wait until the cloudspace is ready before returning.
 
 ### Read-Only
 
@@ -44,6 +46,14 @@ resource "spot_cloudspace" "example" {
 - `last_updated` (String) The last time the cloudspace was updated.
 - `pending_allocations` (Attributes Set) (see [below for nested schema](#nestedatt--pending_allocations))
 - `spotnodepool_ids` (List of String) IDs of the spotnodepools associated with the cloudspace.
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
 
 <a id="nestedatt--bids"></a>
 ### Nested Schema for `bids`

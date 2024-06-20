@@ -146,15 +146,15 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 
 	if data.WaitUntilReady.ValueBool() {
 		tflog.Info(ctx, "Waiting for cloudspace to be ready")
-		// TODO: Use the timeout as shown in the example below when the gh issue gets closed
-		// https://developer.hashicorp.com/terraform/plugin/framework/resources/timeouts
-		// https://github.com/hashicorp/terraform-plugin-codegen-framework/issues/143
-		createTimeout := 30 * time.Minute
-		// Reference: https://discuss.hashicorp.com/t/terraform-plugin-framework-what-is-the-replacement-for-waitforstate-or-retrycontext/45538
-
-		exponentialBackoff := backoff.NewExponentialBackOff()
-		exponentialBackoff.MaxInterval = createTimeout
-		err := backoff.Retry(r.waitForCloudSpaceReady(ctx, name, namespace), exponentialBackoff)
+		// If you dont find the Timeouts attribute in the data, run make generate-code
+		createTimeout, diags := data.Timeouts.Create(ctx, DefaultCloudSpaceCreateTimeout)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+		backoffRetryConfig := getCloudSpaceReadyRetryConfig()
+		backoffRetryConfig.MaxElapsedTime = createTimeout
+		err := backoff.Retry(r.waitForCloudSpaceReady(ctx, name, namespace), backoffRetryConfig)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to wait for cloudspace to be ready", err.Error())
 			return
@@ -275,6 +275,7 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, keyResourceVersion, []byte(cloudspace.ObjectMeta.ResourceVersion))...)
 	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
+	state.WaitUntilReady = plan.WaitUntilReady
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -402,7 +403,9 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	return diags
 }
 
+// This function returns retry function that waits for cloudspace to be ready
 func (r *cloudspaceResource) waitForCloudSpaceReady(ctx context.Context, name string, namespace string) backoff.Operation {
+	// TODO: Is there non-polling based approach?
 	return func() error {
 		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 		cloudspace := &ngpcv1.CloudSpace{}
@@ -423,10 +426,10 @@ func (r *cloudspaceResource) waitForCloudSpaceReady(ctx context.Context, name st
 		case ngpcv1.CloudSpacePhaseError:
 			fallthrough
 		case ngpcv1.CloudSpacePhaseDeleting:
-			return backoff.Permanent(fmt.Errorf("Cloudspace %s is in %s phase", name, cloudspace.Status.Phase))
+			return backoff.Permanent(fmt.Errorf("cloudspace %s is in %s phase", name, cloudspace.Status.Phase))
 		default:
 			tflog.Debug(ctx, "Cloudspace is not ready yet", map[string]any{"name": name, "phase": cloudspace.Status.Phase})
-			return fmt.Errorf("Cloudspace %s is not ready yet", name)
+			return fmt.Errorf("cloudspace %s is not ready yet", name)
 		}
 	}
 }

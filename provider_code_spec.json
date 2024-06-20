@@ -382,7 +382,10 @@
 					{
 						"name": "wait_until_ready",
 						"bool": {
-							"computed_optional_required": "optional",
+							"computed_optional_required": "computed_optional",
+							"default": {
+								"static": false
+							},
 							"description": "Should wait until the cloudspace is ready before returning.",
 							"plan_modifiers": [
 								{
@@ -511,7 +514,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
+							"description": "The server class to be used for the node pool can be obtained from the serverclasses data source.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -787,7 +790,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
+							"description": "The server class to be used for the node pool can be obtained from the serverclasses data source.",
 							"plan_modifiers": [
 								{
 									"custom": {
