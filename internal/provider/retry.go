@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DefaultCloudSpaceCreateTimeout = 30 * time.Minute
-	DefaultCloudSpaceUpdateTimeout = 20 * time.Minute
+	// DefaultCloudSpaceCreateTimeout is the default timeout for creating a control plane for a cloud space.
+	DefaultCloudSpaceCreateTimeout = 5 * time.Minute
 	// DefaultRefreshInterval is the default interval at which the provider will poll the API for updates.
-	DefaultRefreshInterval = 10 * time.Second
+	DefaultRefreshInterval = 5 * time.Second
 )
