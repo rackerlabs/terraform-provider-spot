@@ -25,6 +25,10 @@ type ondemandnodepoolDataSource struct {
 	client ngpc.Client
 }
 
+type ondemandnodepoolDataSourceModel struct {
+	Id types.String `tfsdk:"id"`
+}
+
 func (d *ondemandnodepoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_ondemandnodepool"
 }
@@ -63,7 +67,7 @@ func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.Re
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(setOnDemandNodePoolDataSourceState(onDemandNodePool, &data)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolDataSourceState(ctx, onDemandNodePool, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -72,7 +76,7 @@ func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.Re
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func setOnDemandNodePoolDataSourceState(ondemandnodepool *ngpcv1.OnDemandNodePool, state *datasource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
+func setOnDemandNodePoolDataSourceState(ctx context.Context, ondemandnodepool *ngpcv1.OnDemandNodePool, state *datasource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	state.Name = types.StringValue(ondemandnodepool.ObjectMeta.Name)
 	state.CloudspaceName = types.StringValue(ondemandnodepool.Spec.CloudSpace)

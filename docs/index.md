@@ -115,6 +115,14 @@ resource "spot_cloudspace" "example" {
   wait_until_ready   = true
 }
 
+# Creates a spot node pool with two servers of class gp.vs1.medium-dfw.
+resource "spot_spotnodepool" "non-autoscaling-bid" {
+  cloudspace_name      = resource.spot_cloudspace.example.cloudspace_name
+  server_class         = "gp.vs1.medium-dfw"
+  bid_price            = 0.008
+  desired_server_count = 2
+}
+
 # Creates a spot node pool with an autoscaling pool of 3-8 servers of class gp.vs1.large-dfw.
 resource "spot_spotnodepool" "autoscaling-bid" {
   cloudspace_name = resource.spot_cloudspace.example.cloudspace_name
@@ -127,12 +135,12 @@ resource "spot_spotnodepool" "autoscaling-bid" {
   }
 }
 
-data "spot_kubeconfig" "example" {
-  cloudspace_name = resource.spot_cloudspace.example.name
+data "spot_cloudspace" "example" {
+  id = resource.spot_cloudspace.example.id
 }
 
 output "kubeconfig" {
-  value = data.spot_kubeconfig.example.raw
+  value = data.spot_cloudspace.example.kubeconfig
 }
 ```
 
