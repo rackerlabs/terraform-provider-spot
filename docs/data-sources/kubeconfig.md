@@ -40,7 +40,7 @@ provider "spot" {
 }
 
 data "spot_kubeconfig" "example" {
-  id = var.cloudspace_name
+  cloudspace_name = var.cloudspace_name
 }
 
 output "kubeconfig" {
@@ -81,6 +81,10 @@ variable "token" {
 
 provider "spot" {
   token = var.token
+}
+
+data "spot_kubeconfig" "example" {
+  cloudspace_name = var.cloudspace_name
 }
 
 # Use Kubernetes provider to deploy resources

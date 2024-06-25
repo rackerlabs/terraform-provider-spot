@@ -16,8 +16,7 @@ By default, the data source returns all available regions in the `names` attribu
 
 The example usage shows how to retrieve the list of available regions without any filters:
 ```terraform
-data "spot_regions" "available" {
-}
+data "spot_regions" "available" {}
 
 output "regions" {
   value = data.spot_regions.available.names

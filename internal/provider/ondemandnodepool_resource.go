@@ -102,7 +102,7 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 	tflog.Debug(ctx, "Created ondemandnodepool", map[string]any{"name": onDemandNodePool.ObjectMeta.Name})
-	resp.Diagnostics.Append(setOnDemandNodePoolState(ctx, onDemandNodePool, &data)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolState(onDemandNodePool, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -139,7 +139,7 @@ func (r *ondemandnodepoolResource) Read(ctx context.Context, req resource.ReadRe
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(setOnDemandNodePoolState(ctx, ondemandnodepool, &data)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolState(ondemandnodepool, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -199,7 +199,7 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 	tflog.Debug(ctx, "Updated ondemandnodepool", map[string]any{"name": ondemandnodepool.ObjectMeta.Name})
-	resp.Diagnostics.Append(setOnDemandNodePoolState(ctx, ondemandnodepool, &state)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolState(ondemandnodepool, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -269,7 +269,7 @@ func (r *ondemandnodepoolResource) ModifyPlan(ctx context.Context, req resource.
 	}
 }
 
-func setOnDemandNodePoolState(ctx context.Context, ondemandnodepool *ngpcv1.OnDemandNodePool, state *resource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
+func setOnDemandNodePoolState(ondemandnodepool *ngpcv1.OnDemandNodePool, state *resource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	state.Name = types.StringValue(ondemandnodepool.ObjectMeta.Name)
 	state.CloudspaceName = types.StringValue(ondemandnodepool.Spec.CloudSpace)

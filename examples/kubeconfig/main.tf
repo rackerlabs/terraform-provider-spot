@@ -28,6 +28,10 @@ provider "spot" {
   token = var.token
 }
 
+data "spot_kubeconfig" "example" {
+  cloudspace_name = var.cloudspace_name
+}
+
 # Use Kubernetes provider to deploy resources
 provider "kubernetes" {
   host     = data.spot_kubeconfig.example.kubeconfigs[0].host

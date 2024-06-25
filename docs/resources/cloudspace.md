@@ -68,8 +68,7 @@ Read-Only:
 To retrieve the list of available regions, you can utilize the `spot_regions` data source.
 
 ```terraform
-data "spot_regions" "available" {
-}
+data "spot_regions" "available" {}
 
 output "regions" {
   value = data.spot_regions.available.names

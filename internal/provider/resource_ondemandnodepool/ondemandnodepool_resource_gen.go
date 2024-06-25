@@ -32,8 +32,7 @@ func OndemandnodepoolResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"desired_server_count": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
+				Required:            true,
 				Description:         "The desired number of servers in the node pool.",
 				MarkdownDescription: "The desired number of servers in the node pool.",
 				Validators: []validator.Int64{
@@ -74,8 +73,8 @@ func OndemandnodepoolResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"server_class": schema.StringAttribute{
 				Required:            true,
-				Description:         "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
-				MarkdownDescription: "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
+				Description:         "The server class to be used for the node pool can be obtained from the serverclasses data source.",
+				MarkdownDescription: "The server class to be used for the node pool can be obtained from the serverclasses data source.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

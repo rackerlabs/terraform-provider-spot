@@ -14,7 +14,7 @@ This data source is useful to read attributes of the cloudspace.
 
 ```terraform
 data "spot_cloudspace" "example" {
-  id = "mycloudspace"
+  name = "mycloudspace"
 }
 
 # This outputs the current phase of the cloudspace.

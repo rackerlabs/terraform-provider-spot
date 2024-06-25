@@ -12,7 +12,6 @@ import (
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/google/uuid"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func generateRandomUUID() (string, error) {
@@ -25,25 +24,6 @@ func generateRandomUUID() (string, error) {
 		}
 	}
 	return "", err
-}
-
-// Deprecated: Use name value in place of id instead.
-// getIDFromObjectMeta returns id from object meta
-// id format: namespace/name
-func getIDFromObjectMeta(meta metav1.ObjectMeta) string {
-	return meta.Namespace + "/" + meta.Name
-}
-
-// Deprecated: Use getNameFromId() instead.
-// getNameAndNamespaceFromId returns name and namespace from id of the
-// resource or data source stored in a state
-// id format: namespace/name
-func getNameAndNamespaceFromId(id string) (string, string, error) {
-	parts := strings.Split(id, "/")
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid id %s", id)
-	}
-	return parts[1], parts[0], nil
 }
 
 // getNameFromId returns name from id of the resource or data source stored in a state

@@ -9,3 +9,4 @@ terraform.tfstate.backup
 TODO.md
 .terraform/**
 main.tf
+.terraform.lock.hcl
