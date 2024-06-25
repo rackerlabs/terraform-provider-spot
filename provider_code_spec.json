@@ -378,6 +378,28 @@
 								]
 							}
 						}
+					},
+					{
+						"name": "wait_until_ready",
+						"bool": {
+							"computed_optional_required": "computed_optional",
+							"default": {
+								"static": false
+							},
+							"description": "If true, waits until the cloudspace control plane is ready",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+											}
+										],
+										"schema_definition": "boolplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
 					}
 				]
 			}

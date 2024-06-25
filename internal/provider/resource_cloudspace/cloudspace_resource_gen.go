@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -167,6 +168,19 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 					listplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+			}),
+			"wait_until_ready": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "If true, waits until the cloudspace control plane is ready",
+				MarkdownDescription: "If true, waits until the cloudspace control plane is ready",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+				Default: booldefault.StaticBool(false),
+			},
 		},
 	}
 }
@@ -183,6 +197,8 @@ type CloudspaceModel struct {
 	PreemptionWebhook   types.String `tfsdk:"preemption_webhook"`
 	Region              types.String `tfsdk:"region"`
 	SpotnodepoolIds     types.List   `tfsdk:"spotnodepool_ids"`
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
+	WaitUntilReady      types.Bool   `tfsdk:"wait_until_ready"`
 }
 
 var _ basetypes.ObjectTypable = BidsType{}

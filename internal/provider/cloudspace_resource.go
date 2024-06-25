@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -140,10 +141,25 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, keyResourceVersion, []byte(cloudspace.ObjectMeta.ResourceVersion))...)
 	data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
-	// TODO: Use "wait_until_ready" attribute to wait for the cloudspace to be ready
-	// Refer:  https://github.com/hashicorp/terraform-provider-kubernetes/blob/main/kubernetes/resource_kubernetes_deployment_v1.go#L246
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	tflog.Debug(ctx, "Updated local state")
+
+	if data.WaitUntilReady.ValueBool() {
+		tflog.Info(ctx, "Waiting for cloudspace to be ready")
+		// If you dont find the Timeouts attribute in the data, run make generate-code
+		createTimeout, diags := data.Timeouts.Create(ctx, DefaultCloudSpaceCreateTimeout)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+		maxRetries := uint64(createTimeout/DefaultRefreshInterval) + 1
+		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, r.client, name, namespace), backoffStrategy)
+		if err != nil {
+			resp.Diagnostics.AddWarning("Failed to wait for cloudspace to be ready", err.Error())
+			return
+		}
+	}
 }
 
 func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -259,6 +275,7 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, keyResourceVersion, []byte(cloudspace.ObjectMeta.ResourceVersion))...)
 	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
+	state.WaitUntilReady = plan.WaitUntilReady
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -384,4 +401,35 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 		return diags
 	}
 	return diags
+}
+
+// This function returns retry function that waits for cloudspace to be ready
+func waitForCloudSpaceControlPlaneReady(ctx context.Context, client ngpc.Client, name string, namespace string) backoff.Operation {
+	// TODO: Is there non-polling based approach?
+	return func() error {
+		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
+		cloudspace := &ngpcv1.CloudSpace{}
+		err := client.Get(ctx, ktypes.NamespacedName{
+			Name:      name,
+			Namespace: namespace,
+		}, cloudspace)
+		if err != nil {
+			return backoff.Permanent(err)
+		}
+
+		if len(cloudspace.Status.APIServerEndpoint) > 0 {
+			tflog.Debug(ctx, "Cloudspace control plane is ready", map[string]any{"name": name})
+			return nil
+		}
+
+		switch cloudspace.Status.Phase {
+		case ngpcv1.CloudSpacePhaseError:
+			fallthrough
+		case ngpcv1.CloudSpacePhaseDeleting:
+			return backoff.Permanent(fmt.Errorf("cloudspace %s is in %s phase", name, cloudspace.Status.Phase))
+		default:
+			tflog.Info(ctx, "Cloudspace is not ready yet", map[string]any{"name": name, "phase": cloudspace.Status.Phase})
+			return fmt.Errorf("cloudspace %s is not ready yet", name)
+		}
+	}
 }
