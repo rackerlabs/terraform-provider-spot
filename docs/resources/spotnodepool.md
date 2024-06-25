@@ -32,7 +32,7 @@ resource "spot_spotnodepool" "example" {
 
 - `bid_price` (Number) The bid price for the server in USD, rounded to three decimal places.
 - `cloudspace_name` (String) The name of the cloudspace.
-- `server_class` (String) The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.
+- `server_class` (String) The server class to be used for the node pool can be obtained from the serverclasses data source.
 
 ### Optional
 
