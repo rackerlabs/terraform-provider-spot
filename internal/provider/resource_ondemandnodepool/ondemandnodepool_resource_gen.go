@@ -32,8 +32,7 @@ func OndemandnodepoolResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"desired_server_count": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
+				Required:            true,
 				Description:         "The desired number of servers in the node pool.",
 				MarkdownDescription: "The desired number of servers in the node pool.",
 				Validators: []validator.Int64{

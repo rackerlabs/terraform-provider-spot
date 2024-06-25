@@ -786,7 +786,7 @@
 					{
 						"name": "desired_server_count",
 						"int64": {
-							"computed_optional_required": "computed_optional",
+							"computed_optional_required": "required",
 							"description": "The desired number of servers in the node pool.",
 							"validators": [
 								{

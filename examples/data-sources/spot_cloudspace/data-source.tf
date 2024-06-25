@@ -1,5 +1,5 @@
 data "spot_cloudspace" "example" {
-  id = "mycloudspace"
+  name = "mycloudspace"
 }
 
 # This outputs the current phase of the cloudspace.
