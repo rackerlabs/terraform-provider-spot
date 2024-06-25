@@ -93,11 +93,12 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	if cloudspace.Status.APIServerEndpoint == "" {
 		// If APIServerEndpoint is empty then probably cloudspace is not ready
 		// TODO: Use user provided timeouts; see cloudspace resource for reference
-		backoffRetryConfig := getCloudSpaceReadyRetryConfig()
-		tflog.Info(ctx, "Waiting for cloudspace to be ready", map[string]interface{}{"timeout": backoffRetryConfig.MaxElapsedTime})
-		err := backoff.Retry(waitForCloudSpaceReady(ctx, d.client, name, namespace), backoffRetryConfig)
+		tflog.Debug(ctx, "Waiting for cloudspace to be ready", map[string]interface{}{"name": name, "namespace": namespace})
+		maxRetries := uint64(30)
+		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, d.client, name, namespace), backoffStrategy)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to wait for cloudspace to be ready", err.Error())
+			resp.Diagnostics.AddError("Cloudspace is not ready", err.Error())
 			return
 		}
 	}

@@ -152,11 +152,11 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 			resp.Diagnostics.Append(diags...)
 			return
 		}
-		backoffRetryConfig := getCloudSpaceReadyRetryConfig()
-		backoffRetryConfig.MaxElapsedTime = createTimeout
-		err := backoff.Retry(waitForCloudSpaceReady(ctx, r.client, name, namespace), backoffRetryConfig)
+		maxRetries := uint64(createTimeout/DefaultRefreshInterval) + 1
+		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, r.client, name, namespace), backoffStrategy)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to wait for cloudspace to be ready", err.Error())
+			resp.Diagnostics.AddWarning("Failed to wait for cloudspace to be ready", err.Error())
 			return
 		}
 	}
@@ -404,7 +404,7 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 }
 
 // This function returns retry function that waits for cloudspace to be ready
-func waitForCloudSpaceReady(ctx context.Context, client ngpc.Client, name string, namespace string) backoff.Operation {
+func waitForCloudSpaceControlPlaneReady(ctx context.Context, client ngpc.Client, name string, namespace string) backoff.Operation {
 	// TODO: Is there non-polling based approach?
 	return func() error {
 		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
@@ -417,12 +417,12 @@ func waitForCloudSpaceReady(ctx context.Context, client ngpc.Client, name string
 			return backoff.Permanent(err)
 		}
 
-		switch cloudspace.Status.Phase {
-		case ngpcv1.CloudSpacePhaseReady:
-			tflog.Info(ctx, "Cloudspace is ready", map[string]any{"name": name})
+		if len(cloudspace.Status.APIServerEndpoint) > 0 {
+			tflog.Debug(ctx, "Cloudspace control plane is ready", map[string]any{"name": name})
 			return nil
-		case ngpcv1.CloudSpacePhaseNoWinningBids:
-			fallthrough
+		}
+
+		switch cloudspace.Status.Phase {
 		case ngpcv1.CloudSpacePhaseError:
 			fallthrough
 		case ngpcv1.CloudSpacePhaseDeleting:
