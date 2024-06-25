@@ -26,7 +26,7 @@ resource "spot_ondemandnodepool" "example" {
 ### Required
 
 - `cloudspace_name` (String) The name of the cloudspace.
-- `server_class` (String) The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.
+- `server_class` (String) The class of servers to use for the node pool.
 
 ### Optional
 
