@@ -174,8 +174,8 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 			"wait_until_ready": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Should wait until the cloudspace is ready before returning.",
-				MarkdownDescription: "Should wait until the cloudspace is ready before returning.",
+				Description:         "If true, waits until the cloudspace control plane is ready",
+				MarkdownDescription: "If true, waits until the cloudspace control plane is ready",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},

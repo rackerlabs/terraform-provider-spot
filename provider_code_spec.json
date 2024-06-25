@@ -386,7 +386,7 @@
 							"default": {
 								"static": false
 							},
-							"description": "Should wait until the cloudspace is ready before returning.",
+							"description": "If true, waits until the cloudspace control plane is ready",
 							"plan_modifiers": [
 								{
 									"custom": {

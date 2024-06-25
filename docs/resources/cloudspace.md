@@ -19,6 +19,7 @@ resource "spot_cloudspace" "example" {
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
   preemption_webhook = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+  wait_until_ready   = true
 }
 ```
 
@@ -36,7 +37,7 @@ resource "spot_cloudspace" "example" {
 - `name` (String) The name of the cloudspace.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
-- `wait_until_ready` (Boolean) Should wait until the cloudspace is ready before returning.
+- `wait_until_ready` (Boolean) If true, waits until the cloudspace control plane is ready
 
 ### Read-Only
 
