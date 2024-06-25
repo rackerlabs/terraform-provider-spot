@@ -514,7 +514,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The server class to be used for the node pool can be obtained from the serverclasses data source.",
+							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -645,7 +645,7 @@
 								}
 							],
 							"description": "Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling.",
-							"validators": [
+							"validators" :[
 								{
 									"custom": {
 										"imports": [
@@ -703,7 +703,7 @@
 		{
 			"name": "ondemandnodepool",
 			"schema": {
-				"attributes": [
+				"attributes": [					
 					{
 						"name": "name",
 						"string": {
@@ -790,7 +790,7 @@
 						"name": "server_class",
 						"string": {
 							"computed_optional_required": "required",
-							"description": "The server class to be used for the node pool can be obtained from the serverclasses data source.",
+							"description": "The class of servers to use for the node pool, can be can be retrieved using the serverclasses data source.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -820,10 +820,10 @@
 										],
 										"schema_definition": "int64validator.AtLeast(1)"
 									}
-								}
+								}								
 							]
 						}
-					},
+					},										
 					{
 						"name": "reserved_status",
 						"string": {
@@ -1370,7 +1370,7 @@
 		{
 			"name": "region",
 			"schema": {
-				"attributes": [
+				"attributes":[
 					{
 						"name": "name",
 						"string": {
@@ -1616,7 +1616,7 @@
 									"name": "spot_pricing",
 									"single_nested": {
 										"computed_optional_required": "computed",
-										"attributes": [
+										"attributes":[
 											{
 												"name": "hammer_price_per_hour",
 												"string": {
@@ -1693,7 +1693,7 @@
 		{
 			"name": "ondemandnodepool",
 			"schema": {
-				"attributes": [
+				"attributes": [			
 					{
 						"name": "name",
 						"string": {
@@ -1722,7 +1722,7 @@
 										],
 										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), \"Must be a valid kubernetes name\")"
 									}
-								}
+								}								
 							]
 						}
 					},
@@ -1746,7 +1746,7 @@
 							"computed_optional_required": "computed",
 							"description": "The desired number of servers in the node pool."
 						}
-					},
+					},		
 					{
 						"name": "reserved_status",
 						"string": {
