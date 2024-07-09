@@ -16,8 +16,7 @@ By default, the data source returns all available serverclass names in the `name
 
 The example usage shows how to retrieve the list of available serverclasses without any filters:
 ```terraform
-data "spot_serverclasses" "all" {
-}
+data "spot_serverclasses" "all" {}
 
 output "names" {
   value = data.spot_serverclasses.all.names

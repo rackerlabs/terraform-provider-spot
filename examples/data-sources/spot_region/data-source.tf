@@ -3,6 +3,6 @@ data "spot_region" "example" {
 }
 
 # Outputs the human readable name of the region
-output "csphase" {
+output "region_name" {
   value = data.spot_region.example.description
 }

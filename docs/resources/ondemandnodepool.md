@@ -15,8 +15,9 @@ The `ondemandnodepool` resource is designed to manage Ondemand Node Pools within
 ```terraform
 # Creates a ondemand node pool with a two servers of class gp.vs1.small-dfw.
 resource "spot_ondemandnodepool" "example" {
-  cloudspace_name = "example"
-  server_class    = "gp.vs1.small-dfw"
+  cloudspace_name      = "example"
+  server_class         = "gp.vs1.small-dfw"
+  desired_server_count = 2
 }
 ```
 
@@ -26,11 +27,8 @@ resource "spot_ondemandnodepool" "example" {
 ### Required
 
 - `cloudspace_name` (String) The name of the cloudspace.
-- `server_class` (String) The class of servers to use for the node pool.
-
-### Optional
-
 - `desired_server_count` (Number) The desired number of servers in the node pool.
+- `server_class` (String) The server class to be used for the node pool can be obtained from the serverclasses data source.
 
 ### Read-Only
 

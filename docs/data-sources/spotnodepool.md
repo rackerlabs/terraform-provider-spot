@@ -27,7 +27,7 @@ description: |-
 - `bid_status` (String) Status of the bid associated with this spotnodepool.
 - `cloudspace_name` (String) The name of the cloudspace
 - `desired_server_count` (Number) The desired number of servers in the node pool.
-- `server_class` (String) The class of servers to use for the node pool.
+- `server_class` (String) The class of servers used for the node pool.
 - `won_count` (Number) Number of won bids.
 
 <a id="nestedatt--autoscaling"></a>
