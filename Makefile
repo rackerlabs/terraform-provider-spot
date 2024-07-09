@@ -3,7 +3,7 @@ RENDERED_PROVIDER_NAME := "Rackspace Spot"
 GOBIN := $(PWD)/bin
 PATH := $(GOBIN):$(PATH)
 
-.PHONY: generate generate-code scaffold-ds scaffold-rs scaffold-provider build install apply destroy clean uninstall test fmt lint check-versions docs
+.PHONY: generate generate-code scaffold-ds scaffold-rs scaffold-provider build install apply destroy clean uninstall test fmt lint check-versions docs timeouts-fix
 
 generate:
 	@go generate ./...
@@ -11,6 +11,8 @@ generate:
 generate-code:
 	@echo "Generating provider, resources, data-sources schema files from provider_code_spec.json..."
 	tfplugingen-framework generate all --input ./provider_code_spec.json --output internal/provider
+	@echo "Running script to fix timeout attrib issue..."
+	@bash ./hacks/insert-timeouts-attribute.sh
 
 install:
 	@echo "Installing provider..."

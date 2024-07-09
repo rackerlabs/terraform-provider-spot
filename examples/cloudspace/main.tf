@@ -22,6 +22,7 @@ resource "spot_cloudspace" "example" {
   region             = "us-central-dfw-1"
   hacontrol_plane    = false
   preemption_webhook = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+  wait_until_ready   = true
 }
 
 # Creates a spot node pool with an autoscaling pool of 3-8 servers of class gp.vs1.large-dfw.
