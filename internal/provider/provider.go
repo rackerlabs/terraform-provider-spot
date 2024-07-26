@@ -32,8 +32,7 @@ func New(version string) func() provider.Provider {
 }
 
 type spotProvider struct {
-	NgpcHTTPClient *ngpc.HTTPClient
-	Version        string
+	Version string
 }
 
 func (p *spotProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
@@ -62,6 +61,8 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
+	// Below "NgpcCfg" & "OrgNgpcClient" is used create a unauthenticated
+	// ngpc client to query the organizer for Auth0 client list.
 	NgpcCfg := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
 	OrgNgpcClient, err := ngpc.CreateClientForConfig(NgpcCfg)
 	if err != nil {
