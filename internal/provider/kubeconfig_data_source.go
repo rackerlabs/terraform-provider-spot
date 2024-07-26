@@ -19,13 +19,13 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-const auth0AppName = "NGPC UI"
-
 //go:embed kubeconfig.yaml.tmpl
 var kubeconfigTemplate string
 
-var _ datasource.DataSource = (*kubeconfigDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*kubeconfigDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*kubeconfigDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*kubeconfigDataSource)(nil)
+)
 
 func NewKubeconfigDataSource() datasource.DataSource {
 	return &kubeconfigDataSource{}
@@ -123,7 +123,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		if auth0Client.Name == nil || auth0Client.ClientID == nil || auth0Client.Domain == nil {
 			continue
 		}
-		if *auth0Client.Name == auth0AppName {
+		if *auth0Client.Name == Auth0AppName {
 			kubeconfigVars.OidcClientID = *auth0Client.ClientID
 			kubeconfigVars.OidcIssuerURL = fmt.Sprintf("https://%s/", *auth0Client.Domain)
 		}
