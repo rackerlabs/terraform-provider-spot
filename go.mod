@@ -7,6 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/RSS-Engineering/ngpc-cp v0.0.0-00010101000000-000000000000
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-codegen-framework v0.3.1
@@ -16,6 +17,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
+	golang.org/x/oauth2 v0.21.0
 	k8s.io/apimachinery v0.30.2
 )
 
@@ -82,6 +84,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/platform9/pf9-sdk-go v0.0.0 // indirect
 	github.com/posener/complete v1.2.3 // indirect
+	github.com/pquerna/cachecontrol v0.2.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -101,7 +104,6 @@ require (
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
@@ -110,6 +112,7 @@ require (
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.30.2 // indirect

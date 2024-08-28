@@ -2,15 +2,18 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/coreos/go-oidc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/oauth2"
 
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/provider_spot"
 )
@@ -57,11 +60,64 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Below "NgpcCfg" & "OrgNgpcClient" is used create a unauthenticated
+	// ngpc client to query the organizer for Auth0 client list.
+	NgpcCfg := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
+	OrgNgpcClient, err := ngpc.CreateClientForConfig(NgpcCfg)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
+		return
+	}
+	// get the refresh token from the user input
+	auth0ClientApps, err := OrgNgpcClient.Organizer().GetAuth0Clients(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
+		return
+	}
+
+	// get the auth0 client list from organizer
+	var auth0ClientURL, auth0ClientId string
+	for _, auth0Client := range auth0ClientApps {
+		if auth0Client.Name == nil || auth0Client.ClientID == nil || auth0Client.Domain == nil {
+			continue
+		}
+		if *auth0Client.Name == Auth0AppName {
+			auth0ClientURL = fmt.Sprintf("https://%s/", *auth0Client.Domain)
+			if auth0Client.ClientID != nil {
+				auth0ClientId = *auth0Client.ClientID
+			}
+		}
+	}
+	if auth0ClientId == "" || auth0ClientURL == "" {
+		resp.Diagnostics.AddError("Failed to get auth0 client details", "auth0 clientId (or) clientURL is empty")
+		return
+	}
+
+	// Create an OIDC provider
+	oidcProvider, err := oidc.NewProvider(ctx, auth0ClientURL)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to create OIDC provider", err.Error())
+		return
+	}
+	// Configure the OAuth2 client
+	oauth2Config := &oauth2.Config{
+		ClientID: auth0ClientId,
+		Endpoint: oidcProvider.Endpoint(),
+		Scopes:   []string{"openid", "profile", "email", "offline_access"},
+	}
+
+	// use the client address to get the access token
+	// and set it in the strRxtSpotToken var
 	if !tokenStringVal.IsNull() && !tokenStringVal.IsUnknown() {
-		strRxtSpotToken = tokenStringVal.ValueString()
+		strRxtSpotToken, err = GetAccessToken(ctx, oauth2Config, tokenStringVal.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("error getting the access token", err.Error())
+			return
+		}
 	} else {
-		strRxtSpotToken = os.Getenv("RXTSPOT_TOKEN")
-		if strRxtSpotToken == "" {
+		rxtRefreshToken := os.Getenv("RXTSPOT_TOKEN")
+		if rxtRefreshToken == "" {
 			rxtSpotTokenFile, found := os.LookupEnv("RXTSPOT_TOKEN_FILE")
 			if !found {
 				resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN or RXTSPOT_TOKEN_FILE environment variable")
@@ -69,19 +125,26 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			}
 			tflog.Debug(ctx, "Reading authentication token from file", map[string]any{"rxtSpotTokenFile": rxtSpotTokenFile})
 			var err error
-			strRxtSpotToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
+			rxtRefreshToken, err = readFileUpToNBytes(rxtSpotTokenFile, 5120)
 			if err != nil {
 				resp.Diagnostics.AddError("Failed to read authentication token from file", err.Error())
 				return
 			}
 		}
+
+		strRxtSpotToken, err = GetAccessToken(ctx, oauth2Config, rxtRefreshToken)
+		if err != nil {
+			resp.Diagnostics.AddError("error getting the access token", err.Error())
+			return
+		}
 	}
 	// Setting token in environment variable for other workflows like kubeconfig generation
-	err := os.Setenv("RXTSPOT_TOKEN", strRxtSpotToken)
+	err = os.Setenv("RXTSPOT_TOKEN", strRxtSpotToken)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to set RXTSPOT_TOKEN in environment variable", err.Error())
 		return
 	}
+
 	rxtSpotToken := NewRxtSpotToken(strRxtSpotToken)
 	if err := rxtSpotToken.Parse(); err != nil {
 		resp.Diagnostics.AddError("Failed to parse token", err.Error())
@@ -164,4 +227,23 @@ func (p *spotProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewSpotnodepoolResource,
 		NewOndemandnodepoolResource,
 	}
+}
+
+func GetAccessToken(ctx context.Context, config *oauth2.Config, refreshToken string) (string, error) {
+	token := &oauth2.Token{
+		RefreshToken: refreshToken,
+	}
+
+	tokenSource := config.TokenSource(ctx, token)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		return "", err
+	}
+
+	accessToken, ok := newToken.Extra("id_token").(string)
+	if !ok {
+		return "", fmt.Errorf("id token not found")
+	}
+
+	return accessToken, nil
 }
