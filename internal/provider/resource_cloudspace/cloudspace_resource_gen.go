@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -70,6 +71,20 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.LengthBetween(1, 63),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
 				},
+			},
+			"deployment_type": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The name of the cloudspace.",
+				MarkdownDescription: "The name of the cloudspace.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(regexp.MustCompile(`^gen[12]$`), "deployment_type must be gen1 (or) gen2"),
+				},
+				Default: stringdefault.StaticString("gen1"),
 			},
 			"first_ready_timestamp": schema.StringAttribute{
 				Computed:            true,
@@ -188,6 +203,7 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 type CloudspaceModel struct {
 	Bids                types.Set    `tfsdk:"bids"`
 	CloudspaceName      types.String `tfsdk:"cloudspace_name"`
+	DeploymentType      types.String `tfsdk:"deployment_type"`
 	FirstReadyTimestamp types.String `tfsdk:"first_ready_timestamp"`
 	HacontrolPlane      types.Bool   `tfsdk:"hacontrol_plane"`
 	Id                  types.String `tfsdk:"id"`

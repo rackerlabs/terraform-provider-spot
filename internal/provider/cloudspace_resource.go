@@ -21,10 +21,12 @@ import (
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 )
 
-var _ resource.Resource = (*cloudspaceResource)(nil)
-var _ resource.ResourceWithConfigure = (*cloudspaceResource)(nil)
-var _ resource.ResourceWithImportState = (*cloudspaceResource)(nil)
-var _ resource.ResourceWithModifyPlan = (*cloudspaceResource)(nil)
+var (
+	_ resource.Resource                = (*cloudspaceResource)(nil)
+	_ resource.ResourceWithConfigure   = (*cloudspaceResource)(nil)
+	_ resource.ResourceWithImportState = (*cloudspaceResource)(nil)
+	_ resource.ResourceWithModifyPlan  = (*cloudspaceResource)(nil)
+)
 
 func NewCloudspaceResource() resource.Resource {
 	return &cloudspaceResource{}
@@ -69,7 +71,7 @@ func (r *cloudspaceResource) ModifyPlan(ctx context.Context, req resource.Modify
 			resp.Diagnostics.AddWarning("Failed to validate region", err.Error())
 		} else {
 			var validRegion bool
-			var regionNames = make([]string, len(regionsList))
+			regionNames := make([]string, len(regionsList))
 			for i, region := range regionsList {
 				if region.Name == regionVal.ValueString() {
 					validRegion = true
@@ -125,6 +127,7 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 			Cloud:          "default",
 			HAControlPlane: data.HacontrolPlane.ValueBool(),
 			Webhook:        data.PreemptionWebhook.ValueString(),
+			DeploymentType: data.DeploymentType.ValueString(),
 		},
 	}
 	tflog.Info(ctx, "Creating cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
@@ -237,6 +240,11 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	if plan.DeploymentType.ValueString() != state.DeploymentType.ValueString() {
+		resp.Diagnostics.AddError("Update to the deployment_type is not allowed", fmt.Sprintf("%s to %s is not allowed", state.DeploymentType.ValueString(), plan.DeploymentType.ValueString()))
+		return
+	}
+
 	resourceVersionBytes, diags := req.Private.GetKey(ctx, keyResourceVersion)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -259,6 +267,7 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 			Cloud:          "default",
 			HAControlPlane: plan.HacontrolPlane.ValueBool(),
 			Webhook:        plan.PreemptionWebhook.ValueString(),
+			DeploymentType: plan.DeploymentType.ValueString(),
 		},
 	}
 	tflog.Debug(ctx, "Updating cloudspace", map[string]any{"name": name, "namespace": namespace})
@@ -333,6 +342,7 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	state.CloudspaceName = types.StringValue(cloudspace.ObjectMeta.Name)
 	state.Region = types.StringValue(cloudspace.Spec.Region)
 	state.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
+	state.DeploymentType = types.StringValue(cloudspace.Spec.DeploymentType)
 	if cloudspace.Spec.Webhook != "" {
 		// even if we dont set string value it becomes "" by default
 		// assume it as Null if it is not set

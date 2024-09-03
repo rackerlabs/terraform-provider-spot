@@ -37,6 +37,7 @@ output "csphase" {
 
 - `api_server_endpoint` (String) Kubernetes api server URL
 - `bids` (Attributes Set) (see [below for nested schema](#nestedatt--bids))
+- `deployment_type` (String) deployment type for the cloudspace (gen1|gen2)
 - `first_ready_timestamp` (String) The time when the cloudspace was first ready.
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `health` (String) Health indicates if CloudSpace has a working APIServer and available nodes

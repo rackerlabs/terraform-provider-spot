@@ -17,8 +17,10 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_cloudspace"
 )
 
-var _ datasource.DataSource = (*cloudspaceDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*cloudspaceDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*cloudspaceDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*cloudspaceDataSource)(nil)
+)
 
 func NewCloudspaceDataSource() datasource.DataSource {
 	return &cloudspaceDataSource{}
@@ -97,6 +99,7 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	data.Reason = types.StringValue(cloudspace.Status.Reason)
 	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
 	data.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
+	data.DeploymentType = types.StringValue(cloudspace.Spec.DeploymentType)
 	if cloudspace.Spec.Webhook != "" {
 		// even if we dont set string value it becomes "" by default
 		// assume it as Null if it is not set
