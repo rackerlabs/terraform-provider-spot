@@ -400,6 +400,53 @@
 								}
 							]
 						}
+					},
+					{
+						"name": "deployment_type",
+						"string": {
+							"default": {
+								"static": "gen1"
+							},
+							"computed_optional_required": "computed_optional",
+							"description": "The name of the cloudspace.",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.RequiresReplace()"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							],
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^gen[12]$`), \"deployment_type must be gen1 (or) gen2\")"
+									}
+								}
+							]
+						}
 					}
 				]
 			}
@@ -1078,6 +1125,13 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "Reason contains the reason why the CloudSpace is in a certain phase."
+						}
+					},
+					{
+						"name": "deployment_type",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "deployment type for the cloudspace (gen1|gen2)"
 						}
 					}
 				]

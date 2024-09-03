@@ -52,6 +52,11 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Name of the cloudspace",
 				DeprecationMessage:  "Use the name attribute instead",
 			},
+			"deployment_type": schema.StringAttribute{
+				Computed:            true,
+				Description:         "deployment type for the cloudspace (gen1|gen2)",
+				MarkdownDescription: "deployment type for the cloudspace (gen1|gen2)",
+			},
 			"first_ready_timestamp": schema.StringAttribute{
 				Computed:            true,
 				Description:         "The time when the cloudspace was first ready.",
@@ -162,6 +167,7 @@ type CloudspaceModel struct {
 	ApiServerEndpoint   types.String `tfsdk:"api_server_endpoint"`
 	Bids                types.Set    `tfsdk:"bids"`
 	CloudspaceName      types.String `tfsdk:"cloudspace_name"`
+	DeploymentType      types.String `tfsdk:"deployment_type"`
 	FirstReadyTimestamp types.String `tfsdk:"first_ready_timestamp"`
 	HacontrolPlane      types.Bool   `tfsdk:"hacontrol_plane"`
 	Health              types.String `tfsdk:"health"`
