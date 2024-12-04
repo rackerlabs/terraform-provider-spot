@@ -61,6 +61,10 @@ func (r *spotnodepoolResource) Configure(ctx context.Context, req resource.Confi
 }
 
 func (r *spotnodepoolResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		// resource is being destroyed
+		return
+	}
 	var serverClassVal types.String
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribServerClass), &serverClassVal)...)
 	if !serverClassVal.IsNull() && !serverClassVal.IsUnknown() {

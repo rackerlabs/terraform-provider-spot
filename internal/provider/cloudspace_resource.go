@@ -63,6 +63,23 @@ func (r *cloudspaceResource) Configure(ctx context.Context, req resource.Configu
 }
 
 func (r *cloudspaceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		// resource is being destroyed
+		return
+	}
+	if req.State.Raw.IsNull() && !req.Plan.Raw.IsNull() {
+		// Pre-Create
+		var deploymentTypeVal types.String
+		resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribDeploymentType), &deploymentTypeVal)...)
+		if !deploymentTypeVal.IsNull() && deploymentTypeVal.IsUnknown() && deploymentTypeVal.ValueString() == "gen1" {
+			resp.Diagnostics.AddAttributeError(
+				path.Root(attribDeploymentType),
+				"gen1 is not supported for new cloudspaces",
+				"New cloudspaces can only be created with deployment_type: gen2",
+			)
+			return
+		}
+	}
 	var regionVal types.String
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribRegion), &regionVal)...)
 	if !regionVal.IsNull() && !regionVal.IsUnknown() {

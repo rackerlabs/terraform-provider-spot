@@ -18,7 +18,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	golang.org/x/oauth2 v0.21.0
-	k8s.io/apimachinery v0.30.2
+	k8s.io/apimachinery v0.30.3
 )
 
 require (
@@ -115,15 +115,15 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.30.2 // indirect
-	k8s.io/apiextensions-apiserver v0.30.2 // indirect
-	k8s.io/client-go v0.30.2 // indirect
+	k8s.io/api v0.30.3 // indirect
+	k8s.io/apiextensions-apiserver v0.30.3 // indirect
+	k8s.io/client-go v0.30.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
-	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
+	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	kubevirt.io/containerized-data-importer-api v1.59.0 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4 // indirect
-	sigs.k8s.io/cluster-api v1.7.3 // indirect
+	sigs.k8s.io/cluster-api v1.7.4 // indirect
 	sigs.k8s.io/controller-runtime v0.18.4 // indirect
 	sigs.k8s.io/external-dns v0.14.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
