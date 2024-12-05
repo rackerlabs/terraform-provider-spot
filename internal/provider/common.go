@@ -13,9 +13,8 @@ const (
 	// attribute names defined in the provider_code_spec.json are
 	// defined as constants here, to avoid typos.
 	// Make sure to update these if the provider_code_spec.json changes.
-	attribRegion         = "region"
-	attribServerClass    = "server_class"
-	attribDeploymentType = "deployment_type"
+	attribRegion      = "region"
+	attribServerClass = "server_class"
 )
 
 func listRegions(ctx context.Context, client ngpc.Client) ([]ngpcv1.Region, error) {

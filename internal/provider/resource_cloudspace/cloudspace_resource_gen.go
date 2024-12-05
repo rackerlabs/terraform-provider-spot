@@ -83,7 +83,7 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.OneOf("gen1", "gen2"),
+					stringvalidator.OneOf("gen2"),
 				},
 				Default: stringdefault.StaticString("gen2"),
 			},

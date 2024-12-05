@@ -408,7 +408,7 @@
 								"static": "gen2"
 							},
 							"computed_optional_required": "computed_optional",
-							"description": "Generation of CloudSpace",
+							"description": "Specifies the deployment type for the cloudspace (Only gen2 is allowed value).",
 							"deprecation_message": "Support will be limited to Gen2 cloudspaces, rendering this field obsolete.",
 							"plan_modifiers": [
 								{
@@ -440,7 +440,7 @@
 												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 											}
 										],
-										"schema_definition": "stringvalidator.OneOf(\"gen1\", \"gen2\")"
+										"schema_definition": "stringvalidator.OneOf(\"gen2\")"
 									}
 								}
 							]
