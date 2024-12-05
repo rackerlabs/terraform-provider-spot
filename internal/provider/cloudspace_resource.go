@@ -71,7 +71,7 @@ func (r *cloudspaceResource) ModifyPlan(ctx context.Context, req resource.Modify
 		// Pre-Create
 		var deploymentTypeVal types.String
 		resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribDeploymentType), &deploymentTypeVal)...)
-		if !deploymentTypeVal.IsNull() && deploymentTypeVal.IsUnknown() && deploymentTypeVal.ValueString() == "gen1" {
+		if !deploymentTypeVal.IsNull() && !deploymentTypeVal.IsUnknown() && deploymentTypeVal.ValueString() == "gen1" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root(attribDeploymentType),
 				"gen1 is not supported for new cloudspaces",
