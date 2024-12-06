@@ -33,7 +33,7 @@ resource "spot_cloudspace" "example" {
 ### Optional
 
 - `cloudspace_name` (String) The name of the cloudspace.
-- `deployment_type` (String) The name of the cloudspace.
+- `deployment_type` (String, Deprecated) Specifies the deployment type for the cloudspace (Only gen2 is allowed value).
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `name` (String) The name of the cloudspace.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
