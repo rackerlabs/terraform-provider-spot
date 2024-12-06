@@ -405,10 +405,11 @@
 						"name": "deployment_type",
 						"string": {
 							"default": {
-								"static": "gen1"
+								"static": "gen2"
 							},
 							"computed_optional_required": "computed_optional",
-							"description": "The name of the cloudspace.",
+							"description": "Specifies the deployment type for the cloudspace (Only gen2 is allowed value).",
+							"deprecation_message": "Support will be limited to Gen2 cloudspaces, rendering this field obsolete.",
 							"plan_modifiers": [
 								{
 									"custom": {
@@ -437,12 +438,9 @@
 										"imports": [
 											{
 												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-											},
-											{
-												"path": "regexp"
 											}
 										],
-										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^gen[12]$`), \"deployment_type must be gen1 (or) gen2\")"
+										"schema_definition": "stringvalidator.OneOf(\"gen2\")"
 									}
 								}
 							]

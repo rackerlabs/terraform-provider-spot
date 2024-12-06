@@ -75,16 +75,17 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 			"deployment_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The name of the cloudspace.",
-				MarkdownDescription: "The name of the cloudspace.",
+				Description:         "Specifies the deployment type for the cloudspace (Only gen2 is allowed value).",
+				MarkdownDescription: "Specifies the deployment type for the cloudspace (Only gen2 is allowed value).",
+				DeprecationMessage:  "Support will be limited to Gen2 cloudspaces, rendering this field obsolete.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.RegexMatches(regexp.MustCompile(`^gen[12]$`), "deployment_type must be gen1 (or) gen2"),
+					stringvalidator.OneOf("gen2"),
 				},
-				Default: stringdefault.StaticString("gen1"),
+				Default: stringdefault.StaticString("gen2"),
 			},
 			"first_ready_timestamp": schema.StringAttribute{
 				Computed:            true,
