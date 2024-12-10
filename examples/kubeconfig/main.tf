@@ -22,6 +22,7 @@ variable "cloudspace_name" {
 variable "token" {
   description = "The spot token"
   type        = string
+  sensitive   = true
 }
 
 provider "spot" {

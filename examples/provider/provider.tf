@@ -6,6 +6,12 @@ terraform {
   }
 }
 
+variable "rackspace_spot_token" {
+  description = "Rackspace Spot authentication token"
+  type        = string
+  sensitive   = true
+}
+
 provider "spot" {
-  token = "<rxtspot_token>"
+  token = var.rackspace_spot_token
 }
