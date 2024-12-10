@@ -12,36 +12,15 @@ The Rackspace {{ .ProviderShortName | title }} Provider is a solution for creati
 
 Rackspace Spot delivers fully managed and pre-configured Kubernetes clusters, known as cloudspaces, providing a turnkey solution for deploying and running containerized applications.
 
-## Authenticating with Rackspace Spot
-
-To use this provider, you will require an authentication token. You can obtain the token from the Rackspace Spot dashboard at https://spot.rackspace.com by navigating to the "API Access" section located on the left sidebar.
-
-### Setting the Token in the Provider Configuration
-
-You can provide the authentication token in the provider configuration using the `token` attribute. It is recommended to use Terraform variables or other secure methods to store and reference the token value, rather than hard-coding it directly in your Terraform configuration files. This helps prevent accidental exposure of the token in version control systems.
-
-Example using a Terraform variable:
-
-{{ tffile "examples/provider/provider-with-token.tf" }}
-
-### Setting the Token using Environment Variables
-
-Alternatively, you can set the authentication token using environment variables:
-
-- `RXTSPOT_TOKEN`: Set this variable to the actual token value.
-- `RXTSPOT_TOKEN_FILE`: Set this variable to the absolute path of the file containing the token value.
-
-Example:
-
-{{ codefile "shell" "examples/provider/token-env-vars.sh" }}
-
-Remember to keep your authentication token secure and avoid committing it to version control systems. Use appropriate security measures, such as encrypting sensitive files or using secret management tools, to protect your token.
-
 ## Example Usage
 
 Declare the provider in your configuration and terraform init will automatically fetch and install the provider for you from the Terraform Registry:
 
 {{ tffile .ExampleFile }}
+
+## Authenticating with Rackspace Spot
+
+To use this provider, you will require an authentication token. You can obtain the token from the Rackspace Spot dashboard at https://spot.rackspace.com by navigating to the "API Access" section located on the left sidebar.
 
 {{ .SchemaMarkdown | trimspace }}
 
@@ -80,3 +59,11 @@ A spotnodepool is a pool of nodes in a Spot cloudspace. In Spot, you organize yo
 A spotnodepool can be configured to dynamically adjust the number of servers based on demand. This is known as autoscaling. When demand is high, the spotnodepool can automatically increase the number of servers, and when demand decreases, it can scale down to optimize costs. You can specify the minimum and maximum number of servers in the spotnodepool, and the spotnodepool will automatically scale up or down based on the load.
 
 {{ tffile "examples/spotnodepool/autoscaling.tf" }}
+
+## Regions and Serverclasses
+
+To learn about the identifiers of available [regions](./data-sources/regions.md) and [server classes](./data-sources/serverclasses.md), refer to the data source section on the left.
+
+## Obtaining Kubeconfig for Cloudspace
+
+The kubeconfig file can be obtained by using the `spot_kubeconfig` data source. Detailed information on how to use the data source can be found [here](./data-sources/kubeconfig.md).
