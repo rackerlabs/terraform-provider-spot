@@ -48,6 +48,64 @@ output "kubeconfig" {
 }
 ```
 
+## Automatic Renewal of Kubeconfig Token
+
+The Terraform provider automatically updates the kubeconfig token during execution. For instance, when you run `terraform apply` or similar commands, the provider replaces the kubeconfig token with the latest one. This functionality enables seamless automation of the kubeconfig token renewal process.
+
+Example Configuration:
+
+```terraform
+terraform {
+  required_providers {
+    spot = {
+      source = "rackerlabs/spot"
+    }
+  }
+}
+
+variable "cloudspace_name" {
+  description = "The cloudspace name"
+  type        = string
+}
+
+variable "token" {
+  description = "The spot token"
+  type        = string
+  sensitive   = true
+}
+
+variable "kubeconfig_path" {
+  description = "The path to the output kubeconfig file"
+  type        = string
+  default     = "~/.kube/config"
+}
+
+provider "spot" {
+  token = var.token
+}
+
+data "spot_cloudspace" "example" {
+  name = var.cloudspace_name
+}
+
+data "spot_kubeconfig" "example" {
+  cloudspace_name = data.spot_cloudspace.example.name
+  depends_on      = [data.spot_cloudspace.example]
+}
+
+locals {
+  kubeconfig_path = pathexpand(var.kubeconfig_path)
+}
+
+# Updates the kubeconfig file with a new token each time `terraform apply` is executed.
+resource "local_file" "kubeconfig" {
+  depends_on = [data.spot_kubeconfig.example]
+  count      = 1
+  content    = data.spot_kubeconfig.example.raw
+  filename   = local.kubeconfig_path
+}
+```
+
 ## Using kubeconfig data source with external providers
 
 The following Terraform configuration showcases how to efficiently deploy Kubernetes resources using the `spot`, `kubernetes`, and `helm` providers.
@@ -77,6 +135,7 @@ variable "cloudspace_name" {
 variable "token" {
   description = "The spot token"
   type        = string
+  sensitive   = true
 }
 
 provider "spot" {
