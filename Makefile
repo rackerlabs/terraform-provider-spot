@@ -50,6 +50,8 @@ docs:
 lint:
 	@echo "Linting code..."
 	go vet ./...
+	terraform fmt -check=true -recursive examples/
+	tfplugindocs validate
 
 scaffold-ds:
 	@if [ -z "$(NAME)" ]; then \
