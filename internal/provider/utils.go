@@ -58,7 +58,12 @@ func getNamespaceFromEnv() (string, error) {
 // FindNamespaceForOrganization returns namespace for organization
 // ngpc API is used to find namespace
 func FindNamespaceForOrganization(ctx context.Context, client ngpc.Client, orgName string) (string, error) {
-	org, err := client.Organizer().LookupOrganizationByName(ctx, orgName)
+	httpClient, ok := client.(*ngpc.HTTPClient)
+	if !ok {
+		return "", fmt.Errorf("invalid client type: expected *ngpc.HTTPClient")
+	}
+	orgClient := ngpc.NewOrganizerClient(httpClient.Config)
+	org, err := orgClient.LookupOrganizationByName(ctx, orgName)
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +97,12 @@ func readFileUpToNBytes(filename string, n int64) (string, error) {
 
 // FindOrgName returns organization name from organization id
 func FindOrgName(ctx context.Context, client ngpc.Client, userJWT string, orgID string) (string, error) {
-	orgList, err := client.Organizer().ListOrganizationsForUser(ctx, userJWT)
+	httpClient, ok := client.(*ngpc.HTTPClient)
+	if !ok {
+		return "", fmt.Errorf("invalid client type: expected *ngpc.HTTPClient")
+	}
+	orgClient := ngpc.NewOrganizerClient(httpClient.Config)
+	orgList, err := orgClient.ListOrganizationsForUser(ctx, userJWT)
 	if err != nil {
 		return "", err
 	}

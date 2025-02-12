@@ -102,11 +102,19 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 			return
 		}
 	}
-	auth0ClientApps, err := d.client.Organizer().GetAuth0Clients(ctx)
+
+	httpClient, ok := d.client.(*ngpc.HTTPClient)
+	if !ok {
+		resp.Diagnostics.AddError("Invalid client type", "Expected *ngpc.HTTPClient")
+		return
+	}
+	orgClient := ngpc.NewOrganizerClient(httpClient.Config)
+	auth0ClientApps, err := orgClient.GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
 	}
+
 	token := os.Getenv("RXTSPOT_TOKEN")
 	if token == "" {
 		resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN environment variable")

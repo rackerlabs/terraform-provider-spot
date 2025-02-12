@@ -64,13 +64,8 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	// Below "NgpcCfg" & "OrgNgpcClient" is used create a unauthenticated
 	// ngpc client to query the organizer for Auth0 client list.
 	NgpcCfg := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
-	OrgNgpcClient, err := ngpc.CreateClientForConfig(NgpcCfg)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
-		return
-	}
-	// get the refresh token from the user input
-	auth0ClientApps, err := OrgNgpcClient.Organizer().GetAuth0Clients(ctx)
+	orgClient := ngpc.NewOrganizerClient(NgpcCfg)
+	auth0ClientApps, err := orgClient.GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
