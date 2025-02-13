@@ -1007,18 +1007,6 @@
 						"name": "reserved_count",
 						"int64": {
 							"computed_optional_required": "computed",
-							"plan_modifiers": [
-								{
-									"custom": {
-										"imports": [
-											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-											}
-										],
-										"schema_definition": "int64planmodifier.UseStateForUnknown()"
-									}
-								}
-							],
 							"description": "Number of reserved on-demand nodes."
 						}
 					},

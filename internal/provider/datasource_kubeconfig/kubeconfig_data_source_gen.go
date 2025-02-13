@@ -705,18 +705,28 @@ func (v KubeconfigsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"cluster": basetypes.StringType{},
-			"exec": basetypes.ObjectType{
-				AttrTypes: ExecValue{}.AttributeTypes(ctx),
-			},
-			"host":     basetypes.StringType{},
-			"insecure": basetypes.BoolType{},
-			"name":     basetypes.StringType{},
-			"token":    basetypes.StringType{},
-			"username": basetypes.StringType{},
+	attributeTypes := map[string]attr.Type{
+		"cluster": basetypes.StringType{},
+		"exec": basetypes.ObjectType{
+			AttrTypes: ExecValue{}.AttributeTypes(ctx),
 		},
+		"host":     basetypes.StringType{},
+		"insecure": basetypes.BoolType{},
+		"name":     basetypes.StringType{},
+		"token":    basetypes.StringType{},
+		"username": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"cluster":  v.Cluster,
 			"exec":     exec,
@@ -1213,11 +1223,19 @@ func (v ExecValue) String() string {
 func (v ExecValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	argsVal, d := types.ListValue(types.StringType, v.Args.Elements())
+	var argsVal basetypes.ListValue
+	switch {
+	case v.Args.IsUnknown():
+		argsVal = types.ListUnknown(types.StringType)
+	case v.Args.IsNull():
+		argsVal = types.ListNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		argsVal, d = types.ListValue(types.StringType, v.Args.Elements())
+		diags.Append(d...)
+	}
 
-	diags.Append(d...)
-
-	if d.HasError() {
+	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
 			"api_version": basetypes.StringType{},
 			"args": basetypes.ListType{
@@ -1230,11 +1248,19 @@ func (v ExecValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, di
 		}), diags
 	}
 
-	envVal, d := types.MapValue(types.StringType, v.Env.Elements())
+	var envVal basetypes.MapValue
+	switch {
+	case v.Env.IsUnknown():
+		envVal = types.MapUnknown(types.StringType)
+	case v.Env.IsNull():
+		envVal = types.MapNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		envVal, d = types.MapValue(types.StringType, v.Env.Elements())
+		diags.Append(d...)
+	}
 
-	diags.Append(d...)
-
-	if d.HasError() {
+	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
 			"api_version": basetypes.StringType{},
 			"args": basetypes.ListType{
@@ -1245,19 +1271,29 @@ func (v ExecValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, di
 				ElemType: types.StringType,
 			},
 		}), diags
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"api_version": basetypes.StringType{},
+		"args": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"command": basetypes.StringType{},
+		"env": basetypes.MapType{
+			ElemType: types.StringType,
+		},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
 	}
 
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"api_version": basetypes.StringType{},
-			"args": basetypes.ListType{
-				ElemType: types.StringType,
-			},
-			"command": basetypes.StringType{},
-			"env": basetypes.MapType{
-				ElemType: types.StringType,
-			},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"api_version": v.ApiVersion,
 			"args":        argsVal,

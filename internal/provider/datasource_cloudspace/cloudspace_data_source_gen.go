@@ -500,11 +500,21 @@ func (v BidsValue) String() string {
 func (v BidsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"bid_name":  basetypes.StringType{},
+		"won_count": basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"bid_name":  basetypes.StringType{},
-			"won_count": basetypes.Int64Type{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"bid_name":  v.BidName,
 			"won_count": v.WonCount,
@@ -917,12 +927,22 @@ func (v PendingAllocationsValue) String() string {
 func (v PendingAllocationsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"bid_name":     basetypes.StringType{},
+		"count":        basetypes.Int64Type{},
+		"server_class": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"bid_name":     basetypes.StringType{},
-			"count":        basetypes.Int64Type{},
-			"server_class": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"bid_name":     v.BidName,
 			"count":        v.Count,

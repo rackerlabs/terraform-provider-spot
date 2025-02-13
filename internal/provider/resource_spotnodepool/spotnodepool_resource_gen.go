@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -29,6 +30,15 @@ import (
 func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"annotations": schema.MapAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				Description:         "Custom annotations to apply to the nodepool",
+				MarkdownDescription: "Custom annotations to apply to the nodepool",
+				Validators: []validator.Map{
+					mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), "Must be a valid Kubernetes annotation key")),
+				},
+			},
 			"autoscaling": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"max_nodes": schema.Int64Attribute{
@@ -109,6 +119,15 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"labels": schema.MapAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				Description:         "Custom labels to apply to the nodepool",
+				MarkdownDescription: "Custom labels to apply to the nodepool",
+				Validators: []validator.Map{
+					mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), "Must be a valid Kubernetes label key")),
+				},
+			},
 			"last_updated": schema.StringAttribute{
 				Computed:            true,
 				Description:         "The last time the spotnodepool was updated.",
@@ -133,6 +152,41 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"taint": schema.ListNestedAttribute{
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"effect": schema.StringAttribute{
+							Required:            true,
+							Description:         "The effect of the taint",
+							MarkdownDescription: "The effect of the taint",
+							Validators: []validator.String{
+								stringvalidator.OneOf("NoSchedule", "PreferNoSchedule", "NoExecute"),
+							},
+						},
+						"key": schema.StringAttribute{
+							Required:            true,
+							Description:         "The key of the taint",
+							MarkdownDescription: "The key of the taint",
+							Validators: []validator.String{
+								stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), "Must be a valid Kubernetes taint key"),
+							},
+						},
+						"value": schema.StringAttribute{
+							Required:            true,
+							Description:         "The value of the taint",
+							MarkdownDescription: "The value of the taint",
+						},
+					},
+					CustomType: TaintType{
+						ObjectType: types.ObjectType{
+							AttrTypes: TaintValue{}.AttributeTypes(ctx),
+						},
+					},
+				},
+				Optional:            true,
+				Description:         "Custom taints to apply to the nodepool",
+				MarkdownDescription: "Custom taints to apply to the nodepool",
+			},
 			"won_count": schema.Int64Attribute{
 				Computed:            true,
 				Description:         "Number of won bids.",
@@ -146,15 +200,18 @@ func SpotnodepoolResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type SpotnodepoolModel struct {
+	Annotations        types.Map        `tfsdk:"annotations"`
 	Autoscaling        AutoscalingValue `tfsdk:"autoscaling"`
 	BidPrice           types.Float64    `tfsdk:"bid_price"`
 	BidStatus          types.String     `tfsdk:"bid_status"`
 	CloudspaceName     types.String     `tfsdk:"cloudspace_name"`
 	DesiredServerCount types.Int64      `tfsdk:"desired_server_count"`
 	Id                 types.String     `tfsdk:"id"`
+	Labels             types.Map        `tfsdk:"labels"`
 	LastUpdated        types.String     `tfsdk:"last_updated"`
 	Name               types.String     `tfsdk:"name"`
 	ServerClass        types.String     `tfsdk:"server_class"`
+	Taint              types.List       `tfsdk:"taint"`
 	WonCount           types.Int64      `tfsdk:"won_count"`
 }
 
@@ -473,11 +530,21 @@ func (v AutoscalingValue) String() string {
 func (v AutoscalingValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"max_nodes": basetypes.Int64Type{},
+		"min_nodes": basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"max_nodes": basetypes.Int64Type{},
-			"min_nodes": basetypes.Int64Type{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"max_nodes": v.MaxNodes,
 			"min_nodes": v.MinNodes,
@@ -524,5 +591,439 @@ func (v AutoscalingValue) AttributeTypes(ctx context.Context) map[string]attr.Ty
 	return map[string]attr.Type{
 		"max_nodes": basetypes.Int64Type{},
 		"min_nodes": basetypes.Int64Type{},
+	}
+}
+
+var _ basetypes.ObjectTypable = TaintType{}
+
+type TaintType struct {
+	basetypes.ObjectType
+}
+
+func (t TaintType) Equal(o attr.Type) bool {
+	other, ok := o.(TaintType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t TaintType) String() string {
+	return "TaintType"
+}
+
+func (t TaintType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	effectAttribute, ok := attributes["effect"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`effect is missing from object`)
+
+		return nil, diags
+	}
+
+	effectVal, ok := effectAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`effect expected to be basetypes.StringValue, was: %T`, effectAttribute))
+	}
+
+	keyAttribute, ok := attributes["key"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`key is missing from object`)
+
+		return nil, diags
+	}
+
+	keyVal, ok := keyAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`key expected to be basetypes.StringValue, was: %T`, keyAttribute))
+	}
+
+	valueAttribute, ok := attributes["value"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`value is missing from object`)
+
+		return nil, diags
+	}
+
+	valueVal, ok := valueAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`value expected to be basetypes.StringValue, was: %T`, valueAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return TaintValue{
+		Effect: effectVal,
+		Key:    keyVal,
+		Value:  valueVal,
+		state:  attr.ValueStateKnown,
+	}, diags
+}
+
+func NewTaintValueNull() TaintValue {
+	return TaintValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewTaintValueUnknown() TaintValue {
+	return TaintValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewTaintValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (TaintValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing TaintValue Attribute Value",
+				"While creating a TaintValue value, a missing attribute value was detected. "+
+					"A TaintValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("TaintValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid TaintValue Attribute Type",
+				"While creating a TaintValue value, an invalid attribute value was detected. "+
+					"A TaintValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("TaintValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("TaintValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra TaintValue Attribute Value",
+				"While creating a TaintValue value, an extra attribute value was detected. "+
+					"A TaintValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra TaintValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewTaintValueUnknown(), diags
+	}
+
+	effectAttribute, ok := attributes["effect"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`effect is missing from object`)
+
+		return NewTaintValueUnknown(), diags
+	}
+
+	effectVal, ok := effectAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`effect expected to be basetypes.StringValue, was: %T`, effectAttribute))
+	}
+
+	keyAttribute, ok := attributes["key"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`key is missing from object`)
+
+		return NewTaintValueUnknown(), diags
+	}
+
+	keyVal, ok := keyAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`key expected to be basetypes.StringValue, was: %T`, keyAttribute))
+	}
+
+	valueAttribute, ok := attributes["value"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`value is missing from object`)
+
+		return NewTaintValueUnknown(), diags
+	}
+
+	valueVal, ok := valueAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`value expected to be basetypes.StringValue, was: %T`, valueAttribute))
+	}
+
+	if diags.HasError() {
+		return NewTaintValueUnknown(), diags
+	}
+
+	return TaintValue{
+		Effect: effectVal,
+		Key:    keyVal,
+		Value:  valueVal,
+		state:  attr.ValueStateKnown,
+	}, diags
+}
+
+func NewTaintValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) TaintValue {
+	object, diags := NewTaintValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewTaintValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t TaintType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewTaintValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewTaintValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewTaintValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewTaintValueMust(TaintValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t TaintType) ValueType(ctx context.Context) attr.Value {
+	return TaintValue{}
+}
+
+var _ basetypes.ObjectValuable = TaintValue{}
+
+type TaintValue struct {
+	Effect basetypes.StringValue `tfsdk:"effect"`
+	Key    basetypes.StringValue `tfsdk:"key"`
+	Value  basetypes.StringValue `tfsdk:"value"`
+	state  attr.ValueState
+}
+
+func (v TaintValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 3)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["effect"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["key"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["value"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 3)
+
+		val, err = v.Effect.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["effect"] = val
+
+		val, err = v.Key.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["key"] = val
+
+		val, err = v.Value.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["value"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v TaintValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v TaintValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v TaintValue) String() string {
+	return "TaintValue"
+}
+
+func (v TaintValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"effect": basetypes.StringType{},
+		"key":    basetypes.StringType{},
+		"value":  basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"effect": v.Effect,
+			"key":    v.Key,
+			"value":  v.Value,
+		})
+
+	return objVal, diags
+}
+
+func (v TaintValue) Equal(o attr.Value) bool {
+	other, ok := o.(TaintValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Effect.Equal(other.Effect) {
+		return false
+	}
+
+	if !v.Key.Equal(other.Key) {
+		return false
+	}
+
+	if !v.Value.Equal(other.Value) {
+		return false
+	}
+
+	return true
+}
+
+func (v TaintValue) Type(ctx context.Context) attr.Type {
+	return TaintType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v TaintValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"effect": basetypes.StringType{},
+		"key":    basetypes.StringType{},
+		"value":  basetypes.StringType{},
 	}
 }

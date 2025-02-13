@@ -379,11 +379,21 @@ func (v RegionProviderValue) String() string {
 func (v RegionProviderValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"provider_type": basetypes.StringType{},
+		"region_name":   basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"provider_type": basetypes.StringType{},
-			"region_name":   basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"provider_type": v.ProviderType,
 			"region_name":   v.RegionName,
