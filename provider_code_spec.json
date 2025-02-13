@@ -295,59 +295,43 @@
 					},
 					{
 						"name": "bids",
-						"set_nested": {
+						"map": {
 							"computed_optional_required": "computed",
 							"plan_modifiers": [
 								{
 									"custom": {
 										"imports": [
 											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 											}
 										],
-										"schema_definition": "setplanmodifier.UseStateForUnknown()"
+										"schema_definition": "mapplanmodifier.UseStateForUnknown()"
 									}
 								}
 							],
-							"nested_object": {
-								"attributes": [
-									{
-										"name": "bid_name",
-										"string": {
-											"computed_optional_required": "computed",
-											"plan_modifiers": [
-												{
-													"custom": {
-														"imports": [
-															{
-																"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-															}
-														],
-														"schema_definition": "stringplanmodifier.UseStateForUnknown()"
-													}
-												}
-											]
+							"element_type": {
+								"object": {
+									"attributes": [
+										{
+											"name": "bid_name",
+											"string": {
+												"computed_optional_required": "computed"
+											}
+										},
+										{
+											"name": "won_count",
+											"int64": {
+												"computed_optional_required": "computed"
+											}
+										},
+										{
+											"name": "type",
+											"string": {
+												"computed_optional_required": "computed"
+											}
 										}
-									},
-									{
-										"name": "won_count",
-										"int64": {
-											"computed_optional_required": "computed",
-											"plan_modifiers": [
-												{
-													"custom": {
-														"imports": [
-															{
-																"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-															}
-														],
-														"schema_definition": "int64planmodifier.UseStateForUnknown()"
-													}
-												}
-											]
-										}
-									}
-								]
+									]
+								}
 							}
 						}
 					},
@@ -741,6 +725,121 @@
 							],
 							"description": "Number of won bids."
 						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom labels to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes label key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom annotations to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes annotation key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "taint",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Custom taints to apply to the nodepool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The key of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															},
+															{
+																"path": "regexp"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes taint key\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The value of the taint"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The effect of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						}
 					}
 				]
 			}
@@ -905,6 +1004,121 @@
 								}
 							],
 							"description": "Number of reserved on-demand nodes."
+						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom labels to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes label key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom annotations to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes annotation key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "taint",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Custom taints to apply to the nodepool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The key of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															},
+															{
+																"path": "regexp"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes taint key\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The value of the taint"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The effect of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]
@@ -1254,6 +1468,121 @@
 						"int64": {
 							"computed_optional_required": "computed",
 							"description": "Number of won bids."
+						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom labels to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes label key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom annotations to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes annotation key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "taint",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Custom taints to apply to the nodepool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The key of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															},
+															{
+																"path": "regexp"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes taint key\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The value of the taint"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The effect of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]
@@ -1811,6 +2140,121 @@
 						"int64": {
 							"computed_optional_required": "computed",
 							"description": "Number of reserved on-demand nodes."
+						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom labels to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes label key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"element_type": {
+								"string": {}
+							},
+							"computed_optional_required": "optional",
+							"description": "Custom annotations to apply to the nodepool",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											},
+											{
+												"path": "regexp"
+											}
+										],
+										"schema_definition": "mapvalidator.KeysAre(stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes annotation key\"))"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "taint",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Custom taints to apply to the nodepool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The key of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															},
+															{
+																"path": "regexp"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9._/]*[a-zA-Z0-9])?$`), \"Must be a valid Kubernetes taint key\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The value of the taint"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The effect of the taint",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]
