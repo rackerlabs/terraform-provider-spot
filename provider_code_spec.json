@@ -295,43 +295,59 @@
 					},
 					{
 						"name": "bids",
-						"map": {
+						"set_nested": {
 							"computed_optional_required": "computed",
 							"plan_modifiers": [
 								{
 									"custom": {
 										"imports": [
 											{
-												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 											}
 										],
-										"schema_definition": "mapplanmodifier.UseStateForUnknown()"
+										"schema_definition": "setplanmodifier.UseStateForUnknown()"
 									}
 								}
 							],
-							"element_type": {
-								"object": {
-									"attributes": [
-										{
-											"name": "bid_name",
-											"string": {
-												"computed_optional_required": "computed"
-											}
-										},
-										{
-											"name": "won_count",
-											"int64": {
-												"computed_optional_required": "computed"
-											}
-										},
-										{
-											"name": "type",
-											"string": {
-												"computed_optional_required": "computed"
-											}
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "bid_name",
+										"string": {
+											"computed_optional_required": "computed",
+											"plan_modifiers": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+															}
+														],
+														"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+													}
+												}
+											]
 										}
-									]
-								}
+									},
+									{
+										"name": "won_count",
+										"int64": {
+											"computed_optional_required": "computed",
+											"plan_modifiers": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+															}
+														],
+														"schema_definition": "int64planmodifier.UseStateForUnknown()"
+													}
+												}
+											]
+										}
+									}
+								]
 							}
 						}
 					},
