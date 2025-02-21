@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -12,15 +13,17 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ datasource.DataSource = (*serverclassDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*serverclassDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*serverclassDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*serverclassDataSource)(nil)
+)
 
 func NewServerclassDataSource() datasource.DataSource {
 	return &serverclassDataSource{}
 }
 
 type serverclassDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *serverclassDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -36,17 +39,16 @@ func (d *serverclassDataSource) Configure(ctx context.Context, req datasource.Co
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *ngpc.Client, got: %T. Please report this issue to the provider developers.",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *serverclassDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -64,7 +66,7 @@ func (d *serverclassDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	// Call the API
 	var serverclass ngpcv1.ServerClass
-	err := d.client.Get(ctx, ktypes.NamespacedName{Name: name}, &serverclass)
+	err := d.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name}, &serverclass)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get serverclass", err.Error())
 		return

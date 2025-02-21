@@ -13,15 +13,17 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_serverclasses"
 )
 
-var _ datasource.DataSource = (*serverclassesDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*serverclassesDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*serverclassesDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*serverclassesDataSource)(nil)
+)
 
 func NewServerclassesDataSource() datasource.DataSource {
 	return &serverclassesDataSource{}
 }
 
 type serverclassesDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *serverclassesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -36,17 +38,16 @@ func (d *serverclassesDataSource) Configure(ctx context.Context, req datasource.
 	if req.ProviderData == nil {
 		return
 	}
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -61,7 +62,7 @@ func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	// Read API call logic
 	var serverclassList ngpcv1.ServerClassList
-	err := d.client.List(ctx, &serverclassList)
+	err := d.ngpcClient.List(ctx, &serverclassList)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to list server classes", err.Error())
 		return

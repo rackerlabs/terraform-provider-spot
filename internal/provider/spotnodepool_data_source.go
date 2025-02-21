@@ -16,15 +16,17 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ datasource.DataSource = (*spotnodepoolDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*spotnodepoolDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*spotnodepoolDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*spotnodepoolDataSource)(nil)
+)
 
 func NewSpotnodepoolDataSource() datasource.DataSource {
 	return &spotnodepoolDataSource{}
 }
 
 type spotnodepoolDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *spotnodepoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -40,17 +42,16 @@ func (d *spotnodepoolDataSource) Configure(ctx context.Context, req datasource.C
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *spotnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -76,7 +77,7 @@ func (d *spotnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRe
 	// Read API call logic
 	tflog.Info(ctx, "Getting spotnodepool", map[string]any{"name": name, "namespace": namespace})
 	spotNodePool := &ngpcv1.SpotNodePool{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get spotnodepool", err.Error())
 		return

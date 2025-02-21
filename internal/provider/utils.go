@@ -55,19 +55,6 @@ func getNamespaceFromEnv() (string, error) {
 	return namespace, nil
 }
 
-// FindNamespaceForOrganization returns namespace for organization
-// ngpc API is used to find namespace
-func FindNamespaceForOrganization(ctx context.Context, client ngpc.Client, orgName string) (string, error) {
-	org, err := client.Organizer().LookupOrganizationByName(ctx, orgName)
-	if err != nil {
-		return "", err
-	}
-	if org == nil {
-		return "", fmt.Errorf("organization %s not found", orgName)
-	}
-	return findNamespaceFromID(*org.ID), nil
-}
-
 func findNamespaceFromID(orgID string) string {
 	return strings.ReplaceAll(strings.ToLower(orgID), "_", "-")
 }
@@ -91,8 +78,8 @@ func readFileUpToNBytes(filename string, n int64) (string, error) {
 }
 
 // FindOrgName returns organization name from organization id
-func FindOrgName(ctx context.Context, client ngpc.Client, userJWT string, orgID string) (string, error) {
-	orgList, err := client.Organizer().ListOrganizationsForUser(ctx, userJWT)
+func FindOrgName(ctx context.Context, client *ngpc.OrganizerClient, userJWT string, orgID string) (string, error) {
+	orgList, err := client.ListOrganizationsForUser(ctx, userJWT)
 	if err != nil {
 		return "", err
 	}

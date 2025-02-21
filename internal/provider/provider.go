@@ -20,6 +20,13 @@ import (
 
 var _ provider.Provider = (*spotProvider)(nil)
 
+// SpotProviderData is wrapper over all the dependencies
+// needed by Resources and DataSources
+type SpotProviderData struct {
+	ngpcClient      ngpc.Client
+	organizerClient *ngpc.OrganizerClient
+}
+
 // New creates Provider with given version
 // Version is not connected to any framework functionality currently, but may be in the future.
 // Terraform uses the version from the GH release tag only. Hence value set here doesnt matter.
@@ -61,18 +68,18 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	// Below "NgpcCfg" & "OrgNgpcClient" is used create a unauthenticated
+	// Below "ngpcCfg" & "organizerClient" is used create a unauthenticated
 	// ngpc client to query the organizer for Auth0 client list.
-	NgpcCfg := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
-	OrgNgpcClient, err := ngpc.CreateClientForConfig(NgpcCfg)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
-		return
-	}
+	ngpcCfg := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
+	organizerClient := ngpc.NewOrganizerClient(ngpcCfg)
 	// get the refresh token from the user input
-	auth0ClientApps, err := OrgNgpcClient.Organizer().GetAuth0Clients(ctx)
+	auth0ClientApps, err := organizerClient.GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
+		return
+	}
+	if organizerClient == nil {
+		resp.Diagnostics.AddError("Failed to create organizer client", "organizerClient is nil")
 		return
 	}
 
@@ -139,6 +146,7 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		}
 	}
 	// Setting token in environment variable for other workflows like kubeconfig generation
+	// TODO: Use SpotProviderData to store all these variables
 	err = os.Setenv("RXTSPOT_TOKEN", strRxtSpotToken)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to set RXTSPOT_TOKEN in environment variable", err.Error())
@@ -199,8 +207,18 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
 		return
 	}
-	resp.ResourceData = ngpcClient
-	resp.DataSourceData = ngpcClient
+	if ngpcClient == nil {
+		resp.Diagnostics.AddError("Failed to create ngpc client", "ngpcClient is nil")
+		return
+	}
+	// spotProviderData contains all dependencies needed by Resources and DataSources,
+	// including API clients and global provider state
+	spotProviderData := &SpotProviderData{
+		ngpcClient:      ngpcClient,
+		organizerClient: organizerClient,
+	}
+	resp.ResourceData = spotProviderData
+	resp.DataSourceData = spotProviderData
 }
 
 func (p *spotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {

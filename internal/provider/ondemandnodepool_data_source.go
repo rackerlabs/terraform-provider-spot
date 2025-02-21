@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -15,14 +16,17 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_ondemandnodepool"
 )
 
-var _ datasource.DataSource = (*ondemandnodepoolDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*ondemandnodepoolDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*ondemandnodepoolDataSource)(nil)
+)
 
 func NewOndemandnodepoolDataSource() datasource.DataSource {
 	return &ondemandnodepoolDataSource{}
 }
 
 type ondemandnodepoolDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *ondemandnodepoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -37,6 +41,23 @@ func (d *ondemandnodepoolDataSource) Schema(ctx context.Context, req datasource.
 			},
 		},
 	}
+}
+
+func (d *ondemandnodepoolDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
+		)
+		return
+	}
+
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -58,7 +79,7 @@ func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.Re
 	// Read API call logic
 	tflog.Info(ctx, "Getting ondemandnodepool", map[string]any{"name": name, "namespace": namespace})
 	onDemandNodePool := &ngpcv1.OnDemandNodePool{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, onDemandNodePool)
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, onDemandNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return

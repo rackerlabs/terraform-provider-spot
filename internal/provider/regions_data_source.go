@@ -12,15 +12,17 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_regions"
 )
 
-var _ datasource.DataSource = (*regionsDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*regionsDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*regionsDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*regionsDataSource)(nil)
+)
 
 func NewRegionsDataSource() datasource.DataSource {
 	return &regionsDataSource{}
 }
 
 type regionsDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *regionsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -36,17 +38,16 @@ func (d *regionsDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -62,7 +63,7 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	// Read API call logic
 	tflog.Debug(ctx, "Listing regions")
 	regionsList := &ngpcv1.RegionList{}
-	err := d.client.List(ctx, regionsList)
+	err := d.ngpcClient.List(ctx, regionsList)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get regions", err.Error())
 		return

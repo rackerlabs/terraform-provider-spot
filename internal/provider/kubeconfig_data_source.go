@@ -32,7 +32,8 @@ func NewKubeconfigDataSource() datasource.DataSource {
 }
 
 type kubeconfigDataSource struct {
-	client ngpc.Client
+	ngpcClient      ngpc.Client
+	organizerClient *ngpc.OrganizerClient
 }
 
 func (d *kubeconfigDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -48,17 +49,17 @@ func (d *kubeconfigDataSource) Configure(ctx context.Context, req datasource.Con
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
+	d.organizerClient = spotProviderData.organizerClient
 }
 
 func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -82,7 +83,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	tflog.Debug(ctx, "Getting cloudspace", map[string]interface{}{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
 	}, cloudspace)
@@ -96,17 +97,18 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		tflog.Debug(ctx, "Waiting for cloudspace to be ready", map[string]interface{}{"name": name, "namespace": namespace})
 		maxRetries := uint64(30)
 		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
-		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, d.client, name, namespace), backoffStrategy)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, d.ngpcClient, name, namespace), backoffStrategy)
 		if err != nil {
 			resp.Diagnostics.AddError("Cloudspace is not ready", err.Error())
 			return
 		}
 	}
-	auth0ClientApps, err := d.client.Organizer().GetAuth0Clients(ctx)
+	auth0ClientApps, err := d.organizerClient.GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
 	}
+	// TODO: Use spotProviderData to get token
 	token := os.Getenv("RXTSPOT_TOKEN")
 	if token == "" {
 		resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN environment variable")
@@ -132,12 +134,13 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.AddError("Failed to get oidc client id or issuer url", "Please check if client app is created in Auth0")
 		return
 	}
+	// TODO: Use spotProviderData to get the value
 	kubeconfigVars.OrgID = os.Getenv("RXTSPOT_ORG_ID")
 	if kubeconfigVars.OrgID == "" {
 		resp.Diagnostics.AddError("Missing organization id", "Set RXTSPOT_ORG_ID environment variable")
 		return
 	}
-	orgName, err := FindOrgName(ctx, d.client, token, kubeconfigVars.OrgID)
+	orgName, err := FindOrgName(ctx, d.organizerClient, token, kubeconfigVars.OrgID)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get organization name", err.Error())
 		return

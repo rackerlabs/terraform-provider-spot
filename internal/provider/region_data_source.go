@@ -12,14 +12,17 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ datasource.DataSource = (*regionDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*regionDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*regionDataSource)(nil)
+)
 
 func NewRegionDataSource() datasource.DataSource {
 	return &regionDataSource{}
 }
 
 type regionDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *regionDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -35,17 +38,16 @@ func (d *regionDataSource) Configure(ctx context.Context, req datasource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *regionDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -66,7 +68,7 @@ func (d *regionDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 	region := &ngpcv1.Region{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, region)
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, region)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get region", err.Error())
 		return

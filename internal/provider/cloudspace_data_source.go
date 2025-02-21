@@ -27,7 +27,7 @@ func NewCloudspaceDataSource() datasource.DataSource {
 }
 
 type cloudspaceDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *cloudspaceDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -43,17 +43,16 @@ func (d *cloudspaceDataSource) Configure(ctx context.Context, req datasource.Con
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -80,7 +79,7 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
 	}, cloudspace)
