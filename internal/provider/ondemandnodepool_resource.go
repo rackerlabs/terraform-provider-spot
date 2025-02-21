@@ -7,11 +7,13 @@ import (
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 
@@ -80,6 +82,48 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	tflog.Debug(ctx, "Creating ondemandnodepool", map[string]any{"name": name, "namespace": namespace})
+
+	// Prepare custom metadata
+	var labels map[string]string
+	var annotations map[string]string
+	var taints []corev1.Taint
+
+	if !data.Labels.IsNull() {
+		labels = make(map[string]string)
+		diags := data.Labels.ElementsAs(ctx, &labels, false)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+	}
+
+	if !data.Annotations.IsNull() {
+		annotations = make(map[string]string)
+		diags := data.Annotations.ElementsAs(ctx, &annotations, false)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+	}
+
+	if !data.Taints.IsNull() {
+		var taintsList []resource_ondemandnodepool.TaintsValue
+		diags := data.Taints.ElementsAs(ctx, &taintsList, false)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+
+		taints = make([]corev1.Taint, 0, len(taintsList))
+		for _, taint := range taintsList {
+			taints = append(taints, corev1.Taint{
+				Key:    taint.Key.ValueString(),
+				Value:  taint.Value.ValueString(),
+				Effect: corev1.TaintEffect(taint.Effect.ValueString()),
+			})
+		}
+	}
+
 	onDemandNodePool := &ngpcv1.OnDemandNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OnDemandNodePool",
@@ -90,9 +134,12 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 			Namespace: namespace,
 		},
 		Spec: ngpcv1.OnDemandNodePoolSpec{
-			ServerClass: data.ServerClass.ValueString(),
-			Desired:     int(data.DesiredServerCount.ValueInt64()),
-			CloudSpace:  data.CloudspaceName.ValueString(),
+			ServerClass:       data.ServerClass.ValueString(),
+			Desired:           int(data.DesiredServerCount.ValueInt64()),
+			CloudSpace:        data.CloudspaceName.ValueString(),
+			CustomLabels:      labels,
+			CustomAnnotations: annotations,
+			CustomTaints:      taints,
 		},
 	}
 
@@ -103,7 +150,7 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 	tflog.Debug(ctx, "Created ondemandnodepool", map[string]any{"name": onDemandNodePool.ObjectMeta.Name})
-	resp.Diagnostics.Append(setOnDemandNodePoolState(onDemandNodePool, &data)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolState(ctx, onDemandNodePool, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -140,7 +187,7 @@ func (r *ondemandnodepoolResource) Read(ctx context.Context, req resource.ReadRe
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(setOnDemandNodePoolState(ondemandnodepool, &data)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolState(ctx, ondemandnodepool, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -177,6 +224,48 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 	resourceVersion := string(resourceVersionBytes)
+
+	// Prepare custom metadata
+	var labels map[string]string
+	var annotations map[string]string
+	var taints []corev1.Taint
+
+	if !plan.Labels.IsNull() {
+		labels = make(map[string]string)
+		diags := plan.Labels.ElementsAs(ctx, &labels, false)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+	}
+
+	if !plan.Annotations.IsNull() {
+		annotations = make(map[string]string)
+		diags := plan.Annotations.ElementsAs(ctx, &annotations, false)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+	}
+
+	if !plan.Taints.IsNull() {
+		var taintsList []resource_ondemandnodepool.TaintsValue
+		diags := plan.Taints.ElementsAs(ctx, &taintsList, false)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+
+		taints = make([]corev1.Taint, 0, len(taintsList))
+		for _, taint := range taintsList {
+			taints = append(taints, corev1.Taint{
+				Key:    taint.Key.ValueString(),
+				Value:  taint.Value.ValueString(),
+				Effect: corev1.TaintEffect(taint.Effect.ValueString()),
+			})
+		}
+	}
+
 	ondemandnodepool := &ngpcv1.OnDemandNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OnDemandNodePool",
@@ -188,9 +277,12 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 			ResourceVersion: resourceVersion,
 		},
 		Spec: ngpcv1.OnDemandNodePoolSpec{
-			ServerClass: plan.ServerClass.ValueString(),
-			Desired:     int(plan.DesiredServerCount.ValueInt64()),
-			CloudSpace:  plan.CloudspaceName.ValueString(),
+			ServerClass:       plan.ServerClass.ValueString(),
+			Desired:           int(plan.DesiredServerCount.ValueInt64()),
+			CloudSpace:        plan.CloudspaceName.ValueString(),
+			CustomLabels:      labels,
+			CustomAnnotations: annotations,
+			CustomTaints:      taints,
 		},
 	}
 	tflog.Debug(ctx, "Updating ondemandnodepool", map[string]any{"name": ondemandnodepool.ObjectMeta.Name})
@@ -200,7 +292,7 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 	tflog.Debug(ctx, "Updated ondemandnodepool", map[string]any{"name": ondemandnodepool.ObjectMeta.Name})
-	resp.Diagnostics.Append(setOnDemandNodePoolState(ondemandnodepool, &state)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolState(ctx, ondemandnodepool, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -270,7 +362,7 @@ func (r *ondemandnodepoolResource) ModifyPlan(ctx context.Context, req resource.
 	}
 }
 
-func setOnDemandNodePoolState(ondemandnodepool *ngpcv1.OnDemandNodePool, state *resource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
+func setOnDemandNodePoolState(ctx context.Context, ondemandnodepool *ngpcv1.OnDemandNodePool, state *resource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	state.Name = types.StringValue(ondemandnodepool.ObjectMeta.Name)
 	state.CloudspaceName = types.StringValue(ondemandnodepool.Spec.CloudSpace)
@@ -287,5 +379,56 @@ func setOnDemandNodePoolState(ondemandnodepool *ngpcv1.OnDemandNodePool, state *
 	} else {
 		state.ReservedCount = types.Int64Null()
 	}
+
+	// Map labels
+	if ondemandnodepool.Spec.CustomLabels != nil {
+		labelsMap, diags := types.MapValueFrom(ctx, types.StringType, ondemandnodepool.Spec.CustomLabels)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Labels = labelsMap
+	} else {
+		state.Labels = types.MapNull(types.StringType)
+	}
+
+	// Map annotations
+	if ondemandnodepool.Spec.CustomAnnotations != nil {
+		annotationsMap, diags := types.MapValueFrom(ctx, types.StringType, ondemandnodepool.Spec.CustomAnnotations)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Annotations = annotationsMap
+	} else {
+		state.Annotations = types.MapNull(types.StringType)
+	}
+
+	// Map taints
+	taintsObjType := types.ObjectType{
+		AttrTypes: resource_ondemandnodepool.TaintsValue{}.AttributeTypes(ctx),
+	}
+	if len(ondemandnodepool.Spec.CustomTaints) > 0 {
+		taintsList := make([]attr.Value, 0, len(ondemandnodepool.Spec.CustomTaints))
+		for _, taint := range ondemandnodepool.Spec.CustomTaints {
+			taintObj, diags := types.ObjectValue(
+				resource_ondemandnodepool.TaintsValue{}.AttributeTypes(ctx),
+				map[string]attr.Value{
+					"effect": types.StringValue(string(taint.Effect)),
+					"key":    types.StringValue(taint.Key),
+					"value":  types.StringValue(taint.Value),
+				},
+			)
+			if diags.HasError() {
+				diags.Append(diags...)
+				return diags
+			}
+			taintsList = append(taintsList, taintObj)
+		}
+		state.Taints = types.ListValueMust(taintsObjType, taintsList)
+	} else {
+		state.Taints = types.ListValueMust(taintsObjType, []attr.Value{})
+	}
+
 	return diags
 }
