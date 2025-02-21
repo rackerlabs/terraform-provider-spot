@@ -6,7 +6,6 @@ import (
 	"time"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -28,7 +27,7 @@ func NewOndemandnodepoolResource() resource.Resource {
 }
 
 type ondemandnodepoolResource struct {
-	client *ngpc.HTTPClient
+	client *SpotProviderClient
 }
 
 func (r *ondemandnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -44,12 +43,12 @@ func (r *ondemandnodepoolResource) Configure(ctx context.Context, req resource.C
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
+	client, ok := req.ProviderData.(*SpotProviderClient)
 
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}

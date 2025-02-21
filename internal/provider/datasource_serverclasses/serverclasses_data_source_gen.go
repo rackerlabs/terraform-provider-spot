@@ -381,11 +381,19 @@ func (v FiltersValue) String() string {
 func (v FiltersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	valuesVal, d := types.SetValue(types.StringType, v.Values.Elements())
+	var valuesVal basetypes.SetValue
+	switch {
+	case v.Values.IsUnknown():
+		valuesVal = types.SetUnknown(types.StringType)
+	case v.Values.IsNull():
+		valuesVal = types.SetNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		valuesVal, d = types.SetValue(types.StringType, v.Values.Elements())
+		diags.Append(d...)
+	}
 
-	diags.Append(d...)
-
-	if d.HasError() {
+	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
 			"name": basetypes.StringType{},
 			"values": basetypes.SetType{
@@ -394,13 +402,23 @@ func (v FiltersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue,
 		}), diags
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"name": basetypes.StringType{},
-			"values": basetypes.SetType{
-				ElemType: types.StringType,
-			},
+	attributeTypes := map[string]attr.Type{
+		"name": basetypes.StringType{},
+		"values": basetypes.SetType{
+			ElemType: types.StringType,
 		},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"name":   v.Name,
 			"values": valuesVal,

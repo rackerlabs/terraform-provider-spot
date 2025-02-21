@@ -482,11 +482,21 @@ func (v OnDemandPricingValue) String() string {
 func (v OnDemandPricingValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"cost":     basetypes.StringType{},
+		"interval": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"cost":     basetypes.StringType{},
-			"interval": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"cost":     v.Cost,
 			"interval": v.Interval,
@@ -851,11 +861,21 @@ func (v ResourcesValue) String() string {
 func (v ResourcesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"cpu":    basetypes.StringType{},
+		"memory": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"cpu":    basetypes.StringType{},
-			"memory": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"cpu":    v.Cpu,
 			"memory": v.Memory,
@@ -1220,11 +1240,21 @@ func (v ServerclassProviderValue) String() string {
 func (v ServerclassProviderValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"flavor_id":     basetypes.StringType{},
+		"provider_type": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"flavor_id":     basetypes.StringType{},
-			"provider_type": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"flavor_id":     v.FlavorId,
 			"provider_type": v.ProviderType,
@@ -1756,16 +1786,26 @@ func (v StatusValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"available":    basetypes.Int64Type{},
-			"capacity":     basetypes.Int64Type{},
-			"last_auction": basetypes.Int64Type{},
-			"reserved":     basetypes.Int64Type{},
-			"spot_pricing": basetypes.ObjectType{
-				AttrTypes: SpotPricingValue{}.AttributeTypes(ctx),
-			},
+	attributeTypes := map[string]attr.Type{
+		"available":    basetypes.Int64Type{},
+		"capacity":     basetypes.Int64Type{},
+		"last_auction": basetypes.Int64Type{},
+		"reserved":     basetypes.Int64Type{},
+		"spot_pricing": basetypes.ObjectType{
+			AttrTypes: SpotPricingValue{}.AttributeTypes(ctx),
 		},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"available":    v.Available,
 			"capacity":     v.Capacity,
@@ -2150,11 +2190,21 @@ func (v SpotPricingValue) String() string {
 func (v SpotPricingValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"hammer_price_per_hour": basetypes.StringType{},
+		"market_price_per_hour": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"hammer_price_per_hour": basetypes.StringType{},
-			"market_price_per_hour": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"hammer_price_per_hour": v.HammerPricePerHour,
 			"market_price_per_hour": v.MarketPricePerHour,

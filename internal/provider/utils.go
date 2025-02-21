@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/google/uuid"
 )
 
@@ -57,8 +56,8 @@ func getNamespaceFromEnv() (string, error) {
 
 // FindNamespaceForOrganization returns namespace for organization
 // ngpc API is used to find namespace
-func FindNamespaceForOrganization(ctx context.Context, client ngpc.Client, orgName string) (string, error) {
-	org, err := client.Organizer().LookupOrganizationByName(ctx, orgName)
+func FindNamespaceForOrganization(ctx context.Context, client *SpotProviderClient, orgName string) (string, error) {
+	org, err := client.GetOrganizer().LookupOrganizationByName(ctx, orgName)
 	if err != nil {
 		return "", err
 	}
@@ -91,8 +90,8 @@ func readFileUpToNBytes(filename string, n int64) (string, error) {
 }
 
 // FindOrgName returns organization name from organization id
-func FindOrgName(ctx context.Context, client ngpc.Client, userJWT string, orgID string) (string, error) {
-	orgList, err := client.Organizer().ListOrganizationsForUser(ctx, userJWT)
+func FindOrgName(ctx context.Context, client *SpotProviderClient, userJWT string, orgID string) (string, error) {
+	orgList, err := client.GetOrganizer().ListOrganizationsForUser(ctx, userJWT)
 	if err != nil {
 		return "", err
 	}

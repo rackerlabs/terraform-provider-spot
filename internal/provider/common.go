@@ -4,7 +4,6 @@ import (
 	"context"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 )
 
 const (
@@ -17,7 +16,7 @@ const (
 	attribServerClass = "server_class"
 )
 
-func listRegions(ctx context.Context, client ngpc.Client) ([]ngpcv1.Region, error) {
+func listRegions(ctx context.Context, client *SpotProviderClient) ([]ngpcv1.Region, error) {
 	regionsList := ngpcv1.RegionList{}
 	err := client.List(ctx, &regionsList)
 	if err != nil {
@@ -26,7 +25,7 @@ func listRegions(ctx context.Context, client ngpc.Client) ([]ngpcv1.Region, erro
 	return regionsList.Items, nil
 }
 
-func listServerClasses(ctx context.Context, client ngpc.Client) ([]ngpcv1.ServerClass, error) {
+func listServerClasses(ctx context.Context, client *SpotProviderClient) ([]ngpcv1.ServerClass, error) {
 	var serverClassList ngpcv1.ServerClassList
 	err := client.List(ctx, &serverClassList)
 	if err != nil {

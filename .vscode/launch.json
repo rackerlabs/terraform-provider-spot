@@ -8,8 +8,8 @@
             "mode": "debug",
             "program": "${workspaceFolder}",
             "env": {
-                "RXTSPOT_TOKEN_FILE": "",
-                "NGPC_APISERVER": "",
+                "RXTSPOT_TOKEN_FILE": "/home/dev/workspace/utils/terraform-testing/terraform.tfvars",
+                "NGPC_APISERVER": "https://ngpc-staging-4.platform9.horse",
                 "TF_LOG": "DEBUG",
             },
             "args": [

@@ -61,16 +61,16 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	// Below "NgpcCfg" & "OrgNgpcClient" is used create a unauthenticated
-	// ngpc client to query the organizer for Auth0 client list.
-	NgpcCfg := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
-	OrgNgpcClient, err := ngpc.CreateClientForConfig(NgpcCfg)
+	// Create an unauthenticated client to query the organizer for Auth0 client list
+	spotConfig := ngpc.NewConfig(ngpcAPIServer, "", p.Version == "dev")
+	ngpcClient, err := ngpc.CreateClientForConfig(spotConfig)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
 		return
 	}
+	spotProviderClient := NewSpotProviderClient(ngpcClient)
 	// get the refresh token from the user input
-	auth0ClientApps, err := OrgNgpcClient.Organizer().GetAuth0Clients(ctx)
+	auth0ClientApps, err := spotProviderClient.GetOrganizer().GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
@@ -192,15 +192,16 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	tflog.Info(ctx, "Token verified successfully", map[string]any{"org_id": orgID, "orgNamespace": orgNamespace})
-	tflog.Debug(ctx, "Creating ngpc client", map[string]any{"ngpcAPIServer": ngpcAPIServer})
+	tflog.Debug(ctx, "Creating spot client", map[string]any{"ngpcAPIServer": ngpcAPIServer})
 	cfg := ngpc.NewConfig(ngpcAPIServer, strRxtSpotToken, p.Version == "dev")
-	ngpcClient, err := ngpc.CreateClientForConfig(cfg)
+	ngpcClient, err = ngpc.CreateClientForConfig(cfg)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
 		return
 	}
-	resp.ResourceData = ngpcClient
-	resp.DataSourceData = ngpcClient
+	spotClient := NewSpotProviderClient(ngpcClient)
+	resp.ResourceData = spotClient
+	resp.DataSourceData = spotClient
 }
 
 func (p *spotProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {

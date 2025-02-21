@@ -33,6 +33,9 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 						"bid_name": schema.StringAttribute{
 							Computed: true,
 						},
+						"type": schema.StringAttribute{
+							Computed: true,
+						},
 						"won_count": schema.Int64Attribute{
 							Computed: true,
 						},
@@ -228,6 +231,24 @@ func (t BidsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue)
 			fmt.Sprintf(`bid_name expected to be basetypes.StringValue, was: %T`, bidNameAttribute))
 	}
 
+	typeAttribute, ok := attributes["type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`type is missing from object`)
+
+		return nil, diags
+	}
+
+	typeVal, ok := typeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`type expected to be basetypes.StringValue, was: %T`, typeAttribute))
+	}
+
 	wonCountAttribute, ok := attributes["won_count"]
 
 	if !ok {
@@ -252,6 +273,7 @@ func (t BidsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue)
 
 	return BidsValue{
 		BidName:  bidNameVal,
+		BidsType: typeVal,
 		WonCount: wonCountVal,
 		state:    attr.ValueStateKnown,
 	}, diags
@@ -338,6 +360,24 @@ func NewBidsValue(attributeTypes map[string]attr.Type, attributes map[string]att
 			fmt.Sprintf(`bid_name expected to be basetypes.StringValue, was: %T`, bidNameAttribute))
 	}
 
+	typeAttribute, ok := attributes["type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`type is missing from object`)
+
+		return NewBidsValueUnknown(), diags
+	}
+
+	typeVal, ok := typeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`type expected to be basetypes.StringValue, was: %T`, typeAttribute))
+	}
+
 	wonCountAttribute, ok := attributes["won_count"]
 
 	if !ok {
@@ -362,6 +402,7 @@ func NewBidsValue(attributeTypes map[string]attr.Type, attributes map[string]att
 
 	return BidsValue{
 		BidName:  bidNameVal,
+		BidsType: typeVal,
 		WonCount: wonCountVal,
 		state:    attr.ValueStateKnown,
 	}, diags
@@ -436,24 +477,26 @@ var _ basetypes.ObjectValuable = BidsValue{}
 
 type BidsValue struct {
 	BidName  basetypes.StringValue `tfsdk:"bid_name"`
+	BidsType basetypes.StringValue `tfsdk:"type"`
 	WonCount basetypes.Int64Value  `tfsdk:"won_count"`
 	state    attr.ValueState
 }
 
 func (v BidsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 2)
+	attrTypes := make(map[string]tftypes.Type, 3)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["bid_name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["type"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["won_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 2)
+		vals := make(map[string]tftypes.Value, 3)
 
 		val, err = v.BidName.ToTerraformValue(ctx)
 
@@ -462,6 +505,14 @@ func (v BidsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) 
 		}
 
 		vals["bid_name"] = val
+
+		val, err = v.BidsType.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["type"] = val
 
 		val, err = v.WonCount.ToTerraformValue(ctx)
 
@@ -500,13 +551,25 @@ func (v BidsValue) String() string {
 func (v BidsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"bid_name":  basetypes.StringType{},
+		"type":      basetypes.StringType{},
+		"won_count": basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"bid_name":  basetypes.StringType{},
-			"won_count": basetypes.Int64Type{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"bid_name":  v.BidName,
+			"type":      v.BidsType,
 			"won_count": v.WonCount,
 		})
 
@@ -532,6 +595,10 @@ func (v BidsValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.BidsType.Equal(other.BidsType) {
+		return false
+	}
+
 	if !v.WonCount.Equal(other.WonCount) {
 		return false
 	}
@@ -550,6 +617,7 @@ func (v BidsValue) Type(ctx context.Context) attr.Type {
 func (v BidsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"bid_name":  basetypes.StringType{},
+		"type":      basetypes.StringType{},
 		"won_count": basetypes.Int64Type{},
 	}
 }
@@ -917,12 +985,22 @@ func (v PendingAllocationsValue) String() string {
 func (v PendingAllocationsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"bid_name":     basetypes.StringType{},
+		"count":        basetypes.Int64Type{},
+		"server_class": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"bid_name":     basetypes.StringType{},
-			"count":        basetypes.Int64Type{},
-			"server_class": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"bid_name":     v.BidName,
 			"count":        v.Count,

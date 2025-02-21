@@ -421,11 +421,21 @@ func (v AutoscalingValue) String() string {
 func (v AutoscalingValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"max_nodes": basetypes.Int64Type{},
+		"min_nodes": basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"max_nodes": basetypes.Int64Type{},
-			"min_nodes": basetypes.Int64Type{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"max_nodes": v.MaxNodes,
 			"min_nodes": v.MinNodes,

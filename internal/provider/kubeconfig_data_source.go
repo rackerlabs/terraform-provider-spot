@@ -9,7 +9,6 @@ import (
 	"os"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,7 +31,7 @@ func NewKubeconfigDataSource() datasource.DataSource {
 }
 
 type kubeconfigDataSource struct {
-	client ngpc.Client
+	client *SpotProviderClient
 }
 
 func (d *kubeconfigDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -48,7 +47,7 @@ func (d *kubeconfigDataSource) Configure(ctx context.Context, req datasource.Con
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
+	client, ok := req.ProviderData.(*SpotProviderClient)
 
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -102,7 +101,8 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 			return
 		}
 	}
-	auth0ClientApps, err := d.client.Organizer().GetAuth0Clients(ctx)
+	// get the refresh token from the user input
+	auth0ClientApps, err := d.client.GetOrganizer().GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return

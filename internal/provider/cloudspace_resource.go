@@ -8,7 +8,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
 
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,7 +32,7 @@ func NewCloudspaceResource() resource.Resource {
 }
 
 type cloudspaceResource struct {
-	client ngpc.Client
+	client *SpotProviderClient
 }
 
 func (r *cloudspaceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -49,12 +48,12 @@ func (r *cloudspaceResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
+	client, ok := req.ProviderData.(*SpotProviderClient)
 
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -358,7 +357,7 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	}
 
 	var bidsSlice []resource_cloudspace.BidsValue
-	for _, val := range cloudspace.Status.Bids {
+	for bidName, val := range cloudspace.Status.Bids {
 		var wonCount types.Int64
 		if val.WonCount != nil {
 			wonCount = types.Int64Value(int64(*val.WonCount))
@@ -366,8 +365,9 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 			wonCount = types.Int64Null()
 		}
 		bidObjVal, convertDiags := resource_cloudspace.BidsValue{
-			BidName:  types.StringValue(val.BidName),
+			BidName:  types.StringValue(bidName),
 			WonCount: wonCount,
+			BidsType: types.StringValue(string(val.Type)),
 		}.ToObjectValue(ctx)
 		diags.Append(convertDiags...)
 		if diags.HasError() {
@@ -414,7 +414,7 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 }
 
 // This function returns retry function that waits for cloudspace to be ready
-func waitForCloudSpaceControlPlaneReady(ctx context.Context, client ngpc.Client, name string, namespace string) backoff.Operation {
+func waitForCloudSpaceControlPlaneReady(ctx context.Context, client *SpotProviderClient, name string, namespace string) backoff.Operation {
 	// TODO: Is there non-polling based approach?
 	return func() error {
 		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})

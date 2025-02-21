@@ -16,7 +16,6 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_spotnodepool"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
-	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
@@ -31,7 +30,7 @@ func NewSpotnodepoolResource() resource.Resource {
 }
 
 type spotnodepoolResource struct {
-	client *ngpc.HTTPClient
+	client *SpotProviderClient
 }
 
 func (r *spotnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -47,12 +46,12 @@ func (r *spotnodepoolResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
+	client, ok := req.ProviderData.(*SpotProviderClient)
 
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
