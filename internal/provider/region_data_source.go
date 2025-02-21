@@ -12,7 +12,10 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ datasource.DataSource = (*regionDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*regionDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*regionDataSource)(nil)
+)
 
 func NewRegionDataSource() datasource.DataSource {
 	return &regionDataSource{}
@@ -35,17 +38,24 @@ func (d *regionDataSource) Configure(ctx context.Context, req datasource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	d.client = spotProviderData.ngpcClient
 }
 
 func (d *regionDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

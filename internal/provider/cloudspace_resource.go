@@ -49,17 +49,24 @@ func (r *cloudspaceResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	r.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	r.client = spotProviderData.ngpcClient
 }
 
 func (r *cloudspaceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {

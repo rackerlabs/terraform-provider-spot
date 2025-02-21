@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
@@ -12,8 +13,10 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ datasource.DataSource = (*serverclassDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*serverclassDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*serverclassDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*serverclassDataSource)(nil)
+)
 
 func NewServerclassDataSource() datasource.DataSource {
 	return &serverclassDataSource{}
@@ -36,17 +39,24 @@ func (d *serverclassDataSource) Configure(ctx context.Context, req datasource.Co
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *ngpc.Client, got: %T. Please report this issue to the provider developers.",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	d.client = spotProviderData.ngpcClient
 }
 
 func (d *serverclassDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

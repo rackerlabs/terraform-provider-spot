@@ -32,7 +32,8 @@ func NewKubeconfigDataSource() datasource.DataSource {
 }
 
 type kubeconfigDataSource struct {
-	client ngpc.Client
+	client          ngpc.Client
+	organizerClient *ngpc.OrganizerClient
 }
 
 func (d *kubeconfigDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -48,17 +49,32 @@ func (d *kubeconfigDataSource) Configure(ctx context.Context, req datasource.Con
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+	if spotProviderData.organizerClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing Organizer API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	d.client = spotProviderData.ngpcClient
+	d.organizerClient = spotProviderData.organizerClient
 }
 
 func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -102,11 +118,12 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 			return
 		}
 	}
-	auth0ClientApps, err := d.client.Organizer().GetAuth0Clients(ctx)
+	auth0ClientApps, err := d.organizerClient.GetAuth0Clients(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
 	}
+	// TODO: Use spotProviderData to get token
 	token := os.Getenv("RXTSPOT_TOKEN")
 	if token == "" {
 		resp.Diagnostics.AddError("Missing authentication token", "Set RXTSPOT_TOKEN environment variable")
@@ -132,12 +149,13 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.AddError("Failed to get oidc client id or issuer url", "Please check if client app is created in Auth0")
 		return
 	}
+	// TODO: Use spotProviderData to get the value
 	kubeconfigVars.OrgID = os.Getenv("RXTSPOT_ORG_ID")
 	if kubeconfigVars.OrgID == "" {
 		resp.Diagnostics.AddError("Missing organization id", "Set RXTSPOT_ORG_ID environment variable")
 		return
 	}
-	orgName, err := FindOrgName(ctx, d.client, token, kubeconfigVars.OrgID)
+	orgName, err := FindOrgName(ctx, d.organizerClient, token, kubeconfigVars.OrgID)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get organization name", err.Error())
 		return

@@ -12,8 +12,10 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_regions"
 )
 
-var _ datasource.DataSource = (*regionsDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*regionsDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*regionsDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*regionsDataSource)(nil)
+)
 
 func NewRegionsDataSource() datasource.DataSource {
 	return &regionsDataSource{}
@@ -36,17 +38,24 @@ func (d *regionsDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	d.client = spotProviderData.ngpcClient
 }
 
 func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

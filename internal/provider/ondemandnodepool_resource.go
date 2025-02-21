@@ -18,17 +18,19 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_ondemandnodepool"
 )
 
-var _ resource.Resource = (*ondemandnodepoolResource)(nil)
-var _ resource.ResourceWithConfigure = (*ondemandnodepoolResource)(nil)
-var _ resource.ResourceWithImportState = (*ondemandnodepoolResource)(nil)
-var _ resource.ResourceWithModifyPlan = (*ondemandnodepoolResource)(nil)
+var (
+	_ resource.Resource                = (*ondemandnodepoolResource)(nil)
+	_ resource.ResourceWithConfigure   = (*ondemandnodepoolResource)(nil)
+	_ resource.ResourceWithImportState = (*ondemandnodepoolResource)(nil)
+	_ resource.ResourceWithModifyPlan  = (*ondemandnodepoolResource)(nil)
+)
 
 func NewOndemandnodepoolResource() resource.Resource {
 	return &ondemandnodepoolResource{}
 }
 
 type ondemandnodepoolResource struct {
-	client *ngpc.HTTPClient
+	client ngpc.Client
 }
 
 func (r *ondemandnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -44,17 +46,24 @@ func (r *ondemandnodepoolResource) Configure(ctx context.Context, req resource.C
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	r.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	r.client = spotProviderData.ngpcClient
 }
 
 func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {

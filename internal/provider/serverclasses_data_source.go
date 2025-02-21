@@ -13,8 +13,10 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/datasource_serverclasses"
 )
 
-var _ datasource.DataSource = (*serverclassesDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*serverclassesDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*serverclassesDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*serverclassesDataSource)(nil)
+)
 
 func NewServerclassesDataSource() datasource.DataSource {
 	return &serverclassesDataSource{}
@@ -36,17 +38,24 @@ func (d *serverclassesDataSource) Configure(ctx context.Context, req datasource.
 	if req.ProviderData == nil {
 		return
 	}
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.",
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	d.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	d.client = spotProviderData.ngpcClient
 }
 
 func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

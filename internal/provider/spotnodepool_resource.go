@@ -21,17 +21,19 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
-var _ resource.Resource = (*spotnodepoolResource)(nil)
-var _ resource.ResourceWithConfigure = (*spotnodepoolResource)(nil)
-var _ resource.ResourceWithImportState = (*spotnodepoolResource)(nil)
-var _ resource.ResourceWithModifyPlan = (*spotnodepoolResource)(nil)
+var (
+	_ resource.Resource                = (*spotnodepoolResource)(nil)
+	_ resource.ResourceWithConfigure   = (*spotnodepoolResource)(nil)
+	_ resource.ResourceWithImportState = (*spotnodepoolResource)(nil)
+	_ resource.ResourceWithModifyPlan  = (*spotnodepoolResource)(nil)
+)
 
 func NewSpotnodepoolResource() resource.Resource {
 	return &spotnodepoolResource{}
 }
 
 type spotnodepoolResource struct {
-	client *ngpc.HTTPClient
+	client ngpc.Client
 }
 
 func (r *spotnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -47,17 +49,24 @@ func (r *spotnodepoolResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	client, ok := req.ProviderData.(*ngpc.HTTPClient)
-
+	spotProviderData, ok := req.ProviderData.(*SpotProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *ngpc.HTTPClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *SpotProviderData, got: %T.", req.ProviderData),
 		)
 		return
 	}
 
-	r.client = client
+	if spotProviderData.ngpcClient == nil {
+		resp.Diagnostics.AddError(
+			"Missing NGPC API client",
+			"Provider configuration appears incomplete",
+		)
+		return
+	}
+
+	r.client = spotProviderData.ngpcClient
 }
 
 func (r *spotnodepoolResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
