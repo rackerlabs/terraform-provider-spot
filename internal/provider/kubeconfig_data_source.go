@@ -105,7 +105,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	auth0ClientApps, err := d.organizerClient.GetAuth0Clients(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get auth0 ngpcClient apps", err.Error())
+		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
 	}
 	// TODO: Use spotProviderData to get token
@@ -131,7 +131,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		}
 	}
 	if kubeconfigVars.OidcClientID == "" || kubeconfigVars.OidcIssuerURL == "" {
-		resp.Diagnostics.AddError("Failed to get oidc ngpcClient id or issuer url", "Please check if ngpcClient app is created in Auth0")
+		resp.Diagnostics.AddError("Failed to get oidc client id or issuer url", "Please check if client app is created in Auth0")
 		return
 	}
 	// TODO: Use spotProviderData to get the value
@@ -174,7 +174,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		"oidc-login",
 		"get-token",
 		fmt.Sprintf("--oidc-issuer-url=%s", kubeconfigVars.OidcIssuerURL),
-		fmt.Sprintf("--oidc-ngpcClient-id=%s", kubeconfigVars.OidcClientID),
+		fmt.Sprintf("--oidc-client-id=%s", kubeconfigVars.OidcClientID),
 		"--oidc-extra-scope=openid",
 		"--oidc-extra-scope=profile",
 		"--oidc-extra-scope=email",
@@ -187,7 +187,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	execObjVal, diags := datasource_kubeconfig.ExecValue{
-		ApiVersion: types.StringValue("ngpcClient.authentication.k8s.io/v1beta1"),
+		ApiVersion: types.StringValue("client.authentication.k8s.io/v1beta1"),
 		Command:    types.StringValue("kubectl"),
 		Args:       execArgsListVal,
 		Env:        types.MapNull(types.StringType),
