@@ -23,7 +23,7 @@ func NewServerclassesDataSource() datasource.DataSource {
 }
 
 type serverclassesDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *serverclassesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -47,15 +47,7 @@ func (d *serverclassesDataSource) Configure(ctx context.Context, req datasource.
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	d.client = spotProviderData.ngpcClient
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -70,7 +62,7 @@ func (d *serverclassesDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	// Read API call logic
 	var serverclassList ngpcv1.ServerClassList
-	err := d.client.List(ctx, &serverclassList)
+	err := d.ngpcClient.List(ctx, &serverclassList)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to list server classes", err.Error())
 		return

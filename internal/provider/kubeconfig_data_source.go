@@ -32,7 +32,7 @@ func NewKubeconfigDataSource() datasource.DataSource {
 }
 
 type kubeconfigDataSource struct {
-	client          ngpc.Client
+	ngpcClient      ngpc.Client
 	organizerClient *ngpc.OrganizerClient
 }
 
@@ -58,22 +58,7 @@ func (d *kubeconfigDataSource) Configure(ctx context.Context, req datasource.Con
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-	if spotProviderData.organizerClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing Organizer API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	d.client = spotProviderData.ngpcClient
+	d.ngpcClient = spotProviderData.ngpcClient
 	d.organizerClient = spotProviderData.organizerClient
 }
 
@@ -98,7 +83,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	tflog.Debug(ctx, "Getting cloudspace", map[string]interface{}{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
 	}, cloudspace)
@@ -112,7 +97,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		tflog.Debug(ctx, "Waiting for cloudspace to be ready", map[string]interface{}{"name": name, "namespace": namespace})
 		maxRetries := uint64(30)
 		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
-		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, d.client, name, namespace), backoffStrategy)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, d.ngpcClient, name, namespace), backoffStrategy)
 		if err != nil {
 			resp.Diagnostics.AddError("Cloudspace is not ready", err.Error())
 			return
@@ -120,7 +105,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	auth0ClientApps, err := d.organizerClient.GetAuth0Clients(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
+		resp.Diagnostics.AddError("Failed to get auth0 ngpcClient apps", err.Error())
 		return
 	}
 	// TODO: Use spotProviderData to get token
@@ -146,7 +131,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		}
 	}
 	if kubeconfigVars.OidcClientID == "" || kubeconfigVars.OidcIssuerURL == "" {
-		resp.Diagnostics.AddError("Failed to get oidc client id or issuer url", "Please check if client app is created in Auth0")
+		resp.Diagnostics.AddError("Failed to get oidc ngpcClient id or issuer url", "Please check if ngpcClient app is created in Auth0")
 		return
 	}
 	// TODO: Use spotProviderData to get the value
@@ -189,7 +174,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		"oidc-login",
 		"get-token",
 		fmt.Sprintf("--oidc-issuer-url=%s", kubeconfigVars.OidcIssuerURL),
-		fmt.Sprintf("--oidc-client-id=%s", kubeconfigVars.OidcClientID),
+		fmt.Sprintf("--oidc-ngpcClient-id=%s", kubeconfigVars.OidcClientID),
 		"--oidc-extra-scope=openid",
 		"--oidc-extra-scope=profile",
 		"--oidc-extra-scope=email",
@@ -202,7 +187,7 @@ func (d *kubeconfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	execObjVal, diags := datasource_kubeconfig.ExecValue{
-		ApiVersion: types.StringValue("client.authentication.k8s.io/v1beta1"),
+		ApiVersion: types.StringValue("ngpcClient.authentication.k8s.io/v1beta1"),
 		Command:    types.StringValue("kubectl"),
 		Args:       execArgsListVal,
 		Env:        types.MapNull(types.StringType),

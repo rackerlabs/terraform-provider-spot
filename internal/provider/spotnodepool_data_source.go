@@ -26,7 +26,7 @@ func NewSpotnodepoolDataSource() datasource.DataSource {
 }
 
 type spotnodepoolDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *spotnodepoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -51,15 +51,7 @@ func (d *spotnodepoolDataSource) Configure(ctx context.Context, req datasource.C
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	d.client = spotProviderData.ngpcClient
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *spotnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -85,7 +77,7 @@ func (d *spotnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRe
 	// Read API call logic
 	tflog.Info(ctx, "Getting spotnodepool", map[string]any{"name": name, "namespace": namespace})
 	spotNodePool := &ngpcv1.SpotNodePool{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get spotnodepool", err.Error())
 		return

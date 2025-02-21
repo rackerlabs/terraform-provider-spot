@@ -22,7 +22,7 @@ func NewRegionsDataSource() datasource.DataSource {
 }
 
 type regionsDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *regionsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -47,15 +47,7 @@ func (d *regionsDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	d.client = spotProviderData.ngpcClient
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -71,7 +63,7 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	// Read API call logic
 	tflog.Debug(ctx, "Listing regions")
 	regionsList := &ngpcv1.RegionList{}
-	err := d.client.List(ctx, regionsList)
+	err := d.ngpcClient.List(ctx, regionsList)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get regions", err.Error())
 		return

@@ -33,7 +33,7 @@ func NewSpotnodepoolResource() resource.Resource {
 }
 
 type spotnodepoolResource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (r *spotnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -58,22 +58,14 @@ func (r *spotnodepoolResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	r.client = spotProviderData.ngpcClient
+	r.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (r *spotnodepoolResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	var serverClassVal types.String
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribServerClass), &serverClassVal)...)
 	if !serverClassVal.IsNull() && !serverClassVal.IsUnknown() {
-		serverClasssList, err := listServerClasses(ctx, r.client)
+		serverClasssList, err := listServerClasses(ctx, r.ngpcClient)
 		if err != nil {
 			resp.Diagnostics.AddWarning("Failed to list server classes", err.Error())
 		} else {
@@ -140,7 +132,7 @@ func (r *spotnodepoolResource) Create(ctx context.Context, req resource.CreateRe
 		}
 	}
 	tflog.Debug(ctx, "Creating spotnodepool", map[string]any{"name": spotNodePool.ObjectMeta.Name})
-	err = r.client.Create(ctx, spotNodePool)
+	err = r.ngpcClient.Create(ctx, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create nodepool", err.Error())
 		return
@@ -182,7 +174,7 @@ func (r *spotnodepoolResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Info(ctx, "Getting spotnodepool", map[string]any{"name": name, "namespace": namespace})
 	spotNodePool := &ngpcv1.SpotNodePool{}
-	err = r.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
+	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get spotnodepool", err.Error())
 		return
@@ -254,7 +246,7 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 		},
 	}
 	tflog.Debug(ctx, "Updating spotnodepool", map[string]any{"name": spotNodePool.ObjectMeta.Name})
-	err = r.client.Update(ctx, spotNodePool)
+	err = r.ngpcClient.Update(ctx, spotNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update spotnodepool", err.Error())
 		return
@@ -289,7 +281,7 @@ func (r *spotnodepoolResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 	tflog.Info(ctx, "Deleting spotnodepool", map[string]any{"name": name, "namespace": namespace})
-	err = r.client.Delete(ctx, &ngpcv1.SpotNodePool{
+	err = r.ngpcClient.Delete(ctx, &ngpcv1.SpotNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "SpotNodePool",
 			APIVersion: "ngpc.rxt.io/v1",

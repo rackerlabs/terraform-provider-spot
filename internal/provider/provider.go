@@ -78,6 +78,10 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		resp.Diagnostics.AddError("Failed to get auth0 client apps", err.Error())
 		return
 	}
+	if organizerClient == nil {
+		resp.Diagnostics.AddError("Failed to create organizer client", "organizerClient is nil")
+		return
+	}
 
 	// get the auth0 client list from organizer
 	var auth0ClientURL, auth0ClientId string
@@ -142,6 +146,7 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		}
 	}
 	// Setting token in environment variable for other workflows like kubeconfig generation
+	// TODO: Use SpotProviderData to store all these variables
 	err = os.Setenv("RXTSPOT_TOKEN", strRxtSpotToken)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to set RXTSPOT_TOKEN in environment variable", err.Error())
@@ -200,6 +205,10 @@ func (p *spotProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	ngpcClient, err := ngpc.CreateClientForConfig(cfg)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ngpc client", err.Error())
+		return
+	}
+	if ngpcClient == nil {
+		resp.Diagnostics.AddError("Failed to create ngpc client", "ngpcClient is nil")
 		return
 	}
 	// spotProviderData contains all dependencies needed by Resources and DataSources,

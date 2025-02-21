@@ -27,7 +27,7 @@ func NewCloudspaceDataSource() datasource.DataSource {
 }
 
 type cloudspaceDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *cloudspaceDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -52,15 +52,7 @@ func (d *cloudspaceDataSource) Configure(ctx context.Context, req datasource.Con
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	d.client = spotProviderData.ngpcClient
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -87,7 +79,7 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
 	}, cloudspace)

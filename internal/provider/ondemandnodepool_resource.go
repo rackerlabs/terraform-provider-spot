@@ -30,7 +30,7 @@ func NewOndemandnodepoolResource() resource.Resource {
 }
 
 type ondemandnodepoolResource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (r *ondemandnodepoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -55,15 +55,7 @@ func (r *ondemandnodepoolResource) Configure(ctx context.Context, req resource.C
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	r.client = spotProviderData.ngpcClient
+	r.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -105,7 +97,7 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	tflog.Debug(ctx, "Creating ondemandnodepool", map[string]any{"name": onDemandNodePool.ObjectMeta.Name})
-	err = r.client.Create(ctx, onDemandNodePool)
+	err = r.ngpcClient.Create(ctx, onDemandNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create nodepool", err.Error())
 		return
@@ -143,7 +135,7 @@ func (r *ondemandnodepoolResource) Read(ctx context.Context, req resource.ReadRe
 
 	tflog.Info(ctx, "Getting ondemandnodepool", map[string]any{"name": name, "namespace": namespace})
 	ondemandnodepool := &ngpcv1.OnDemandNodePool{}
-	err = r.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, ondemandnodepool)
+	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, ondemandnodepool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return
@@ -202,7 +194,7 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 		},
 	}
 	tflog.Debug(ctx, "Updating ondemandnodepool", map[string]any{"name": ondemandnodepool.ObjectMeta.Name})
-	err = r.client.Update(ctx, ondemandnodepool)
+	err = r.ngpcClient.Update(ctx, ondemandnodepool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update ondemandnodepool", err.Error())
 		return
@@ -233,7 +225,7 @@ func (r *ondemandnodepoolResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 	tflog.Info(ctx, "Deleting ondemandnodepool", map[string]any{"name": name, "namespace": namespace})
-	err = r.client.Delete(ctx, &ngpcv1.OnDemandNodePool{
+	err = r.ngpcClient.Delete(ctx, &ngpcv1.OnDemandNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OnDemandNodePool",
 			APIVersion: "ngpc.rxt.io/v1",
@@ -258,7 +250,7 @@ func (r *ondemandnodepoolResource) ModifyPlan(ctx context.Context, req resource.
 	var serverClassVal types.String
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribServerClass), &serverClassVal)...)
 	if !serverClassVal.IsNull() && !serverClassVal.IsUnknown() {
-		serverClasssList, err := listServerClasses(ctx, r.client)
+		serverClasssList, err := listServerClasses(ctx, r.ngpcClient)
 		if err != nil {
 			resp.Diagnostics.AddWarning("Failed to list server classes", err.Error())
 		} else {

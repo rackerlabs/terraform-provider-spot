@@ -26,7 +26,7 @@ func NewOndemandnodepoolDataSource() datasource.DataSource {
 }
 
 type ondemandnodepoolDataSource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (d *ondemandnodepoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -57,15 +57,7 @@ func (d *ondemandnodepoolDataSource) Configure(ctx context.Context, req datasour
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	d.client = spotProviderData.ngpcClient
+	d.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -87,7 +79,7 @@ func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.Re
 	// Read API call logic
 	tflog.Info(ctx, "Getting ondemandnodepool", map[string]any{"name": name, "namespace": namespace})
 	onDemandNodePool := &ngpcv1.OnDemandNodePool{}
-	err = d.client.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, onDemandNodePool)
+	err = d.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, onDemandNodePool)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return

@@ -33,7 +33,7 @@ func NewCloudspaceResource() resource.Resource {
 }
 
 type cloudspaceResource struct {
-	client ngpc.Client
+	ngpcClient ngpc.Client
 }
 
 func (r *cloudspaceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -58,22 +58,14 @@ func (r *cloudspaceResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	if spotProviderData.ngpcClient == nil {
-		resp.Diagnostics.AddError(
-			"Missing NGPC API client",
-			"Provider configuration appears incomplete",
-		)
-		return
-	}
-
-	r.client = spotProviderData.ngpcClient
+	r.ngpcClient = spotProviderData.ngpcClient
 }
 
 func (r *cloudspaceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	var regionVal types.String
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(attribRegion), &regionVal)...)
 	if !regionVal.IsNull() && !regionVal.IsUnknown() {
-		regionsList, err := listRegions(ctx, r.client)
+		regionsList, err := listRegions(ctx, r.ngpcClient)
 		if err != nil {
 			resp.Diagnostics.AddWarning("Failed to validate region", err.Error())
 		} else {
@@ -138,7 +130,7 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		},
 	}
 	tflog.Info(ctx, "Creating cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
-	err = r.client.Create(ctx, cloudspace)
+	err = r.ngpcClient.Create(ctx, cloudspace)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create cloudspace", err.Error())
 		return
@@ -164,7 +156,7 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 		}
 		maxRetries := uint64(createTimeout/DefaultRefreshInterval) + 1
 		backoffStrategy := backoff.WithMaxRetries(backoff.NewConstantBackOff(DefaultRefreshInterval), maxRetries)
-		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, r.client, name, namespace), backoffStrategy)
+		err := backoff.Retry(waitForCloudSpaceControlPlaneReady(ctx, r.ngpcClient, name, namespace), backoffStrategy)
 		if err != nil {
 			resp.Diagnostics.AddWarning("Failed to wait for cloudspace to be ready", err.Error())
 			return
@@ -198,7 +190,7 @@ func (r *cloudspaceResource) Read(ctx context.Context, req resource.ReadRequest,
 	// Read API call logic
 	tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 	cloudspace := &ngpcv1.CloudSpace{}
-	err = r.client.Get(ctx, ktypes.NamespacedName{
+	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
 	}, cloudspace)
@@ -278,7 +270,7 @@ func (r *cloudspaceResource) Update(ctx context.Context, req resource.UpdateRequ
 		},
 	}
 	tflog.Debug(ctx, "Updating cloudspace", map[string]any{"name": name, "namespace": namespace})
-	err = r.client.Update(ctx, cloudspace)
+	err = r.ngpcClient.Update(ctx, cloudspace)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update cloudspace", err.Error())
 		return
@@ -321,7 +313,7 @@ func (r *cloudspaceResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	// Delete API call logic
 	tflog.Debug(ctx, "Deleting cloudspace", map[string]any{"name": name, "namespace": namespace})
-	err = r.client.Delete(ctx, &ngpcv1.CloudSpace{
+	err = r.ngpcClient.Delete(ctx, &ngpcv1.CloudSpace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CloudSpace",
 			APIVersion: "ngpc.rxt.io/v1",
@@ -421,12 +413,12 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 }
 
 // This function returns retry function that waits for cloudspace to be ready
-func waitForCloudSpaceControlPlaneReady(ctx context.Context, client ngpc.Client, name string, namespace string) backoff.Operation {
+func waitForCloudSpaceControlPlaneReady(ctx context.Context, ngpcClient ngpc.Client, name string, namespace string) backoff.Operation {
 	// TODO: Is there non-polling based approach?
 	return func() error {
 		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
 		cloudspace := &ngpcv1.CloudSpace{}
-		err := client.Get(ctx, ktypes.NamespacedName{
+		err := ngpcClient.Get(ctx, ktypes.NamespacedName{
 			Name:      name,
 			Namespace: namespace,
 		}, cloudspace)
