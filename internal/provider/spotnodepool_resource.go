@@ -123,6 +123,8 @@ func (r *spotnodepoolResource) Create(ctx context.Context, req resource.CreateRe
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		labels = nil
 	}
 
 	if !data.Annotations.IsNull() {
@@ -132,6 +134,8 @@ func (r *spotnodepoolResource) Create(ctx context.Context, req resource.CreateRe
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		annotations = nil
 	}
 
 	if !data.Taints.IsNull() {
@@ -150,6 +154,8 @@ func (r *spotnodepoolResource) Create(ctx context.Context, req resource.CreateRe
 				Effect: corev1.TaintEffect(taint.Effect.ValueString()),
 			})
 		}
+	} else {
+		taints = nil
 	}
 
 	spotNodePool := &ngpcv1.SpotNodePool{
@@ -268,12 +274,15 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
 		return
 	}
-	resourceVersionBytes, diags := req.Private.GetKey(ctx, keyResourceVersion)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+
+	// Get the latest version of the resource before we update it
+	tflog.Debug(ctx, "Getting latest version of spotnodepool", map[string]any{"name": name})
+	latest := &ngpcv1.SpotNodePool{}
+	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, latest)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get latest version of spotnodepool", err.Error())
 		return
 	}
-	resourceVersion := string(resourceVersionBytes)
 
 	// Prepare custom metadata
 	var labels map[string]string
@@ -287,6 +296,8 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		labels = nil
 	}
 
 	if !plan.Annotations.IsNull() {
@@ -296,6 +307,8 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		annotations = nil
 	}
 
 	if !plan.Taints.IsNull() {
@@ -314,6 +327,8 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 				Effect: corev1.TaintEffect(taint.Effect.ValueString()),
 			})
 		}
+	} else {
+		taints = nil
 	}
 
 	spotNodePool := &ngpcv1.SpotNodePool{
@@ -324,7 +339,7 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
-			ResourceVersion: resourceVersion,
+			ResourceVersion: latest.ResourceVersion,
 		},
 		Spec: ngpcv1.SpotNodePoolSpec{
 			ServerClass:       plan.ServerClass.ValueString(),
@@ -473,7 +488,7 @@ func setSpotnodepoolState(ctx context.Context, spotnodepool *ngpcv1.SpotNodePool
 	}
 
 	// Map labels
-	if spotnodepool.Spec.CustomLabels != nil {
+	if len(spotnodepool.Spec.CustomLabels) > 0 {
 		labelsMap, diags := types.MapValueFrom(ctx, types.StringType, spotnodepool.Spec.CustomLabels)
 		if diags.HasError() {
 			diags.Append(diags...)
@@ -485,7 +500,7 @@ func setSpotnodepoolState(ctx context.Context, spotnodepool *ngpcv1.SpotNodePool
 	}
 
 	// Map annotations
-	if spotnodepool.Spec.CustomAnnotations != nil {
+	if len(spotnodepool.Spec.CustomAnnotations) > 0 {
 		annotationsMap, diags := types.MapValueFrom(ctx, types.StringType, spotnodepool.Spec.CustomAnnotations)
 		if diags.HasError() {
 			diags.Append(diags...)
@@ -519,7 +534,7 @@ func setSpotnodepoolState(ctx context.Context, spotnodepool *ngpcv1.SpotNodePool
 		}
 		state.Taints = types.ListValueMust(taintsObjType, taintsList)
 	} else {
-		state.Taints = types.ListValueMust(taintsObjType, []attr.Value{})
+		state.Taints = types.ListNull(taintsObjType)
 	}
 
 	return diags

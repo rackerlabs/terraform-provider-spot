@@ -95,6 +95,8 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		labels = nil
 	}
 
 	if !data.Annotations.IsNull() {
@@ -104,6 +106,8 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		annotations = nil
 	}
 
 	if !data.Taints.IsNull() {
@@ -122,6 +126,8 @@ func (r *ondemandnodepoolResource) Create(ctx context.Context, req resource.Crea
 				Effect: corev1.TaintEffect(taint.Effect.ValueString()),
 			})
 		}
+	} else {
+		taints = nil
 	}
 
 	onDemandNodePool := &ngpcv1.OnDemandNodePool{
@@ -218,12 +224,15 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 		resp.Diagnostics.AddError("Failed to get namespace", err.Error())
 		return
 	}
-	resourceVersionBytes, diags := req.Private.GetKey(ctx, keyResourceVersion)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+
+	// Get the latest version of the resource before updating
+	tflog.Debug(ctx, "Getting latest version of ondemandnodepool", map[string]any{"name": name})
+	latest := &ngpcv1.OnDemandNodePool{}
+	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, latest)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get latest version of ondemandnodepool", err.Error())
 		return
 	}
-	resourceVersion := string(resourceVersionBytes)
 
 	// Prepare custom metadata
 	var labels map[string]string
@@ -237,6 +246,8 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		labels = nil
 	}
 
 	if !plan.Annotations.IsNull() {
@@ -246,6 +257,8 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 			resp.Diagnostics.Append(diags...)
 			return
 		}
+	} else {
+		annotations = nil
 	}
 
 	if !plan.Taints.IsNull() {
@@ -264,6 +277,8 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 				Effect: corev1.TaintEffect(taint.Effect.ValueString()),
 			})
 		}
+	} else {
+		taints = nil
 	}
 
 	ondemandnodepool := &ngpcv1.OnDemandNodePool{
@@ -274,7 +289,7 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
-			ResourceVersion: resourceVersion,
+			ResourceVersion: latest.ResourceVersion,
 		},
 		Spec: ngpcv1.OnDemandNodePoolSpec{
 			ServerClass:       plan.ServerClass.ValueString(),
@@ -381,7 +396,7 @@ func setOnDemandNodePoolState(ctx context.Context, ondemandnodepool *ngpcv1.OnDe
 	}
 
 	// Map labels
-	if ondemandnodepool.Spec.CustomLabels != nil {
+	if len(ondemandnodepool.Spec.CustomLabels) > 0 {
 		labelsMap, diags := types.MapValueFrom(ctx, types.StringType, ondemandnodepool.Spec.CustomLabels)
 		if diags.HasError() {
 			diags.Append(diags...)
@@ -393,7 +408,7 @@ func setOnDemandNodePoolState(ctx context.Context, ondemandnodepool *ngpcv1.OnDe
 	}
 
 	// Map annotations
-	if ondemandnodepool.Spec.CustomAnnotations != nil {
+	if len(ondemandnodepool.Spec.CustomAnnotations) > 0 {
 		annotationsMap, diags := types.MapValueFrom(ctx, types.StringType, ondemandnodepool.Spec.CustomAnnotations)
 		if diags.HasError() {
 			diags.Append(diags...)
@@ -427,7 +442,7 @@ func setOnDemandNodePoolState(ctx context.Context, ondemandnodepool *ngpcv1.OnDe
 		}
 		state.Taints = types.ListValueMust(taintsObjType, taintsList)
 	} else {
-		state.Taints = types.ListValueMust(taintsObjType, []attr.Value{})
+		state.Taints = types.ListNull(taintsObjType)
 	}
 
 	return diags
