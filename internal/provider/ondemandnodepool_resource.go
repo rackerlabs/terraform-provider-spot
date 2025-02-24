@@ -226,6 +226,9 @@ func (r *ondemandnodepoolResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	// Get the latest version of the resource before updating
+	// We need to get the latest version to ensure we have the most up-to-date resource version
+	// This is required for Kubernetes optimistic concurrency control, even though Terraform does its own refresh
+	// because other controllers may have modified the resource between our read and update
 	tflog.Debug(ctx, "Getting latest version of ondemandnodepool", map[string]any{"name": name})
 	latest := &ngpcv1.OnDemandNodePool{}
 	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, latest)

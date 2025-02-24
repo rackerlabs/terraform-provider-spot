@@ -276,6 +276,9 @@ func (r *spotnodepoolResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	// Get the latest version of the resource before we update it
+	// We need to get the latest version to ensure we have the most up-to-date resource version
+	// This is required for Kubernetes concurrency control, even though Terraform does its own refresh
+	// because other controllers may have modified the resource between our read and update
 	tflog.Debug(ctx, "Getting latest version of spotnodepool", map[string]any{"name": name})
 	latest := &ngpcv1.SpotNodePool{}
 	err = r.ngpcClient.Get(ctx, ktypes.NamespacedName{Name: name, Namespace: namespace}, latest)
