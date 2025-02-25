@@ -36,8 +36,11 @@ resource "spot_spotnodepool" "example" {
 
 ### Optional
 
+- `annotations` (Map of String) Annotations to be applied to the nodes of the node pool
 - `autoscaling` (Attributes) Scales the nodes in a cluster based on usage. This block should be omitted to disable autoscaling. (see [below for nested schema](#nestedatt--autoscaling))
 - `desired_server_count` (Number) The desired number of servers in the node pool. Should be removed if autoscaling is enabled.
+- `labels` (Map of String) Labels to be applied to the nodes of the node pool
+- `taints` (Attributes List) Kubernetes taints to be applied to the nodes of the node pool (see [below for nested schema](#nestedatt--taints))
 
 ### Read-Only
 
@@ -54,6 +57,19 @@ Optional:
 
 - `max_nodes` (Number) The maximum number of nodes in the node pool.
 - `min_nodes` (Number) The minimum number of nodes in the node pool.
+
+
+<a id="nestedatt--taints"></a>
+### Nested Schema for `taints`
+
+Required:
+
+- `effect` (String) The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)
+- `key` (String) The taint key to be applied
+
+Optional:
+
+- `value` (String) The taint value
 
 ## Import
 

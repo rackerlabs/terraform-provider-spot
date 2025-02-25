@@ -6,6 +6,7 @@ import (
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -84,7 +85,7 @@ func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.Re
 		resp.Diagnostics.AddError("Failed to get ondemandnodepool", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(setOnDemandNodePoolDataSourceState(onDemandNodePool, &data)...)
+	resp.Diagnostics.Append(setOnDemandNodePoolDataSourceState(ctx, onDemandNodePool, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -93,7 +94,7 @@ func (d *ondemandnodepoolDataSource) Read(ctx context.Context, req datasource.Re
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func setOnDemandNodePoolDataSourceState(ondemandnodepool *ngpcv1.OnDemandNodePool, state *datasource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
+func setOnDemandNodePoolDataSourceState(ctx context.Context, ondemandnodepool *ngpcv1.OnDemandNodePool, state *datasource_ondemandnodepool.OndemandnodepoolModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	state.Name = types.StringValue(ondemandnodepool.ObjectMeta.Name)
 	state.CloudspaceName = types.StringValue(ondemandnodepool.Spec.CloudSpace)
@@ -110,5 +111,55 @@ func setOnDemandNodePoolDataSourceState(ondemandnodepool *ngpcv1.OnDemandNodePoo
 	} else {
 		state.ReservedCount = types.Int64Null()
 	}
+
+	// Map labels
+	if ondemandnodepool.Spec.CustomLabels != nil {
+		labelsMap, diags := types.MapValueFrom(ctx, types.StringType, ondemandnodepool.Spec.CustomLabels)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Labels = labelsMap
+	} else {
+		state.Labels = types.MapNull(types.StringType)
+	}
+
+	// Map annotations
+	if ondemandnodepool.Spec.CustomAnnotations != nil {
+		annotationsMap, diags := types.MapValueFrom(ctx, types.StringType, ondemandnodepool.Spec.CustomAnnotations)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Annotations = annotationsMap
+	} else {
+		state.Annotations = types.MapNull(types.StringType)
+	}
+
+	// Map taints
+	taintsObjType := types.ObjectType{
+		AttrTypes: datasource_ondemandnodepool.TaintsValue{}.AttributeTypes(ctx),
+	}
+	if len(ondemandnodepool.Spec.CustomTaints) > 0 {
+		taintsList := make([]datasource_ondemandnodepool.TaintsValue, 0, len(ondemandnodepool.Spec.CustomTaints))
+		for _, taint := range ondemandnodepool.Spec.CustomTaints {
+			taintValue := datasource_ondemandnodepool.TaintsValue{
+				Effect: types.StringValue(string(taint.Effect)),
+				Key:    types.StringValue(taint.Key),
+				Value:  types.StringValue(taint.Value),
+			}
+			taintsList = append(taintsList, taintValue)
+		}
+
+		taints, diags := types.ListValueFrom(ctx, taintsObjType, taintsList)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Taints = taints
+	} else {
+		state.Taints = types.ListValueMust(taintsObjType, []attr.Value{})
+	}
+
 	return diags
 }

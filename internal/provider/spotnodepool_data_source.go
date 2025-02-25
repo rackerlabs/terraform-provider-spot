@@ -7,6 +7,7 @@ import (
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -148,5 +149,55 @@ func setSpotnodepoolDataSourceState(ctx context.Context, spotnodepool *ngpcv1.Sp
 	} else {
 		state.WonCount = types.Int64Null()
 	}
+
+	// Map labels
+	if spotnodepool.Spec.CustomLabels != nil {
+		labelsMap, diags := types.MapValueFrom(ctx, types.StringType, spotnodepool.Spec.CustomLabels)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Labels = labelsMap
+	} else {
+		state.Labels = types.MapNull(types.StringType)
+	}
+
+	// Map annotations
+	if spotnodepool.Spec.CustomAnnotations != nil {
+		annotationsMap, diags := types.MapValueFrom(ctx, types.StringType, spotnodepool.Spec.CustomAnnotations)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Annotations = annotationsMap
+	} else {
+		state.Annotations = types.MapNull(types.StringType)
+	}
+
+	// Map taints
+	taintsObjType := types.ObjectType{
+		AttrTypes: datasource_spotnodepool.TaintsValue{}.AttributeTypes(ctx),
+	}
+	if len(spotnodepool.Spec.CustomTaints) > 0 {
+		taintsList := make([]datasource_spotnodepool.TaintsValue, 0, len(spotnodepool.Spec.CustomTaints))
+		for _, taint := range spotnodepool.Spec.CustomTaints {
+			taintValue := datasource_spotnodepool.TaintsValue{
+				Effect: types.StringValue(string(taint.Effect)),
+				Key:    types.StringValue(taint.Key),
+				Value:  types.StringValue(taint.Value),
+			}
+			taintsList = append(taintsList, taintValue)
+		}
+
+		taints, diags := types.ListValueFrom(ctx, taintsObjType, taintsList)
+		if diags.HasError() {
+			diags.Append(diags...)
+			return diags
+		}
+		state.Taints = taints
+	} else {
+		state.Taints = types.ListValueMust(taintsObjType, []attr.Value{})
+	}
+
 	return diags
 }

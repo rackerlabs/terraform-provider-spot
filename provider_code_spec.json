@@ -636,6 +636,70 @@
 						}
 					},
 					{
+						"name": "labels",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Labels to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Annotations to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "taints",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Kubernetes taints to be applied to the nodes of the node pool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint key to be applied"
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "optional",
+											"description": "The taint value"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						}
+					},
+					{
 						"name": "autoscaling",
 						"single_nested": {
 							"computed_optional_required": "optional",
@@ -905,6 +969,70 @@
 								}
 							],
 							"description": "Number of reserved on-demand nodes."
+						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Labels to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Annotations to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "taints",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Kubernetes taints to be applied to the nodes of the node pool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint key to be applied"
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "optional",
+											"description": "The taint value"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]
@@ -1254,6 +1382,70 @@
 						"int64": {
 							"computed_optional_required": "computed",
 							"description": "Number of won bids."
+						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Labels to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Annotations to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "taints",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Kubernetes taints to be applied to the nodes of the node pool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint key to be applied"
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "optional",
+											"description": "The taint value"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]
@@ -1811,6 +2003,70 @@
 						"int64": {
 							"computed_optional_required": "computed",
 							"description": "Number of reserved on-demand nodes."
+						}
+					},
+					{
+						"name": "labels",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Labels to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "annotations",
+						"map": {
+							"computed_optional_required": "optional",
+							"description": "Annotations to be applied to the nodes of the node pool",
+							"element_type": {
+								"string": {}
+							}
+						}
+					},
+					{
+						"name": "taints",
+						"list_nested": {
+							"computed_optional_required": "optional",
+							"description": "Kubernetes taints to be applied to the nodes of the node pool",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "key",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint key to be applied"
+										}
+									},
+									{
+										"name": "value",
+										"string": {
+											"computed_optional_required": "optional",
+											"description": "The taint value"
+										}
+									},
+									{
+										"name": "effect",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
 						}
 					}
 				]
