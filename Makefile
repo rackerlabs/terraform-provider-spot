@@ -75,7 +75,8 @@ scaffold-provider:
 
 dependencies:
 	@echo "Installing dependencies..."
-	go install github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen@latest
+	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
 check-versions:
 	@echo "Checking Go version..."
