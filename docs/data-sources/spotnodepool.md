@@ -17,8 +17,11 @@ description: |-
 
 ### Optional
 
+- `annotations` (Map of String) Annotations to be applied to the nodes of the node pool
 - `id` (String, Deprecated) ID of the spotnodepool, same as name.
+- `labels` (Map of String) Labels to be applied to the nodes of the node pool
 - `name` (String) Name of the spotnodepool
+- `taints` (Attributes List) Kubernetes taints to be applied to the nodes of the node pool (see [below for nested schema](#nestedatt--taints))
 
 ### Read-Only
 
@@ -29,6 +32,19 @@ description: |-
 - `desired_server_count` (Number) The desired number of servers in the node pool.
 - `server_class` (String) The class of servers used for the node pool.
 - `won_count` (Number) Number of won bids.
+
+<a id="nestedatt--taints"></a>
+### Nested Schema for `taints`
+
+Required:
+
+- `effect` (String) The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)
+- `key` (String) The taint key to be applied
+
+Optional:
+
+- `value` (String) The taint value
+
 
 <a id="nestedatt--autoscaling"></a>
 ### Nested Schema for `autoscaling`

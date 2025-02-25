@@ -30,12 +30,30 @@ resource "spot_ondemandnodepool" "example" {
 - `desired_server_count` (Number) The desired number of servers in the node pool.
 - `server_class` (String) The server class to be used for the node pool can be obtained from the serverclasses data source.
 
+### Optional
+
+- `annotations` (Map of String) Annotations to be applied to the nodes of the node pool
+- `labels` (Map of String) Labels to be applied to the nodes of the node pool
+- `taints` (Attributes List) Kubernetes taints to be applied to the nodes of the node pool (see [below for nested schema](#nestedatt--taints))
+
 ### Read-Only
 
 - `last_updated` (String) The last time the ondemandnodepool was updated.
 - `name` (String) The name of the ondemandnodepool.
 - `reserved_count` (Number) Number of reserved on-demand nodes.
 - `reserved_status` (String) Status of the ondemandnodepool.
+
+<a id="nestedatt--taints"></a>
+### Nested Schema for `taints`
+
+Required:
+
+- `effect` (String) The taint effect (NoSchedule, PreferNoSchedule, or NoExecute)
+- `key` (String) The taint key to be applied
+
+Optional:
+
+- `value` (String) The taint value
 
 ## Import
 
