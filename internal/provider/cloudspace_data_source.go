@@ -8,6 +8,7 @@ import (
 
 	ngpcv1 "github.com/RSS-Engineering/ngpc-cp/api/v1"
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -97,7 +98,7 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	data.Phase = types.StringValue(string(cloudspace.Status.Phase))
 	data.Reason = types.StringValue(cloudspace.Status.Reason)
 	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
-	data.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
+	data.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.UTC().Format(time.RFC3339))
 	data.DeploymentType = types.StringValue(cloudspace.Spec.DeploymentType)
 	data.KubernetesVersion = types.StringValue(cloudspace.Spec.KubernetesVersion)
 	data.Cni = types.StringValue(cloudspace.Spec.CNI)
@@ -109,11 +110,18 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		data.PreemptionWebhook = types.StringNull()
 	}
 	var diags diag.Diagnostics
-	data.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+
+	// Always set SpotnodepoolIds to a known value since it may not be available after initial cloudspace creation
+	if len(cloudspace.Spec.BidRequests) > 0 {
+		data.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	} else {
+		data.SpotnodepoolIds = types.ListValueMust(types.StringType, []attr.Value{})
 	}
+
 	data.OndemandnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.OnDemandRequests)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

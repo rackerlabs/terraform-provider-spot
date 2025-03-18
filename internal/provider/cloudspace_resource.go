@@ -9,6 +9,7 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -353,11 +354,14 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	} else {
 		state.PreemptionWebhook = types.StringNull()
 	}
-	state.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
-	state.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
-	diags.Append(diags...)
-	if diags.HasError() {
-		return diags
+	state.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.UTC().Format(time.RFC3339))
+
+	// Always set SpotnodepoolIds to a known value since it may not be available after initial cloudspace creation
+	// This prevents Terraform from seeing an "unknown" value after apply
+	if len(cloudspace.Spec.BidRequests) > 0 {
+		state.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
+	} else {
+		state.SpotnodepoolIds = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 
 	var bidsSlice []resource_cloudspace.BidsValue
