@@ -33,8 +33,10 @@ resource "spot_cloudspace" "example" {
 ### Optional
 
 - `cloudspace_name` (String) The name of the cloudspace.
+- `cni` (String) Container Network Interface (CNI) to use. Supported values: calico, cilium, byocni
 - `deployment_type` (String, Deprecated) Specifies the deployment type for the cloudspace (Only gen2 is allowed value).
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
+- `kubernetes_version` (String) Kubernetes version to deploy in the cloudspace. Supported values: 1.29.6, 1.30.10, 1.31.1
 - `name` (String) The name of the cloudspace.
 - `preemption_webhook` (String) Webhook URL for preemption notifications.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
