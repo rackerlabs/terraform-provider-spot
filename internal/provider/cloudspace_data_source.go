@@ -99,6 +99,8 @@ func (d *cloudspaceDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	data.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
 	data.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
 	data.DeploymentType = types.StringValue(cloudspace.Spec.DeploymentType)
+	data.KubernetesVersion = types.StringValue(cloudspace.Spec.KubernetesVersion)
+	data.Cni = types.StringValue(cloudspace.Spec.CNI)
 	if cloudspace.Spec.Webhook != "" {
 		// even if we dont set string value it becomes "" by default
 		// assume it as Null if it is not set

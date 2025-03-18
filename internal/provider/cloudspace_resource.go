@@ -122,11 +122,13 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 			Namespace: namespace,
 		},
 		Spec: ngpcv1.CloudSpaceSpec{
-			Region:         data.Region.ValueString(),
-			Cloud:          "default",
-			HAControlPlane: data.HacontrolPlane.ValueBool(),
-			Webhook:        data.PreemptionWebhook.ValueString(),
-			DeploymentType: data.DeploymentType.ValueString(),
+			Region:            data.Region.ValueString(),
+			Cloud:             "default",
+			HAControlPlane:    data.HacontrolPlane.ValueBool(),
+			Webhook:           data.PreemptionWebhook.ValueString(),
+			DeploymentType:    data.DeploymentType.ValueString(),
+			KubernetesVersion: data.KubernetesVersion.ValueString(),
+			CNI:               data.Cni.ValueString(),
 		},
 	}
 	tflog.Info(ctx, "Creating cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
@@ -342,6 +344,8 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	state.Region = types.StringValue(cloudspace.Spec.Region)
 	state.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
 	state.DeploymentType = types.StringValue(cloudspace.Spec.DeploymentType)
+	state.KubernetesVersion = types.StringValue(cloudspace.Spec.KubernetesVersion)
+	state.Cni = types.StringValue(cloudspace.Spec.CNI)
 	if cloudspace.Spec.Webhook != "" {
 		// even if we dont set string value it becomes "" by default
 		// assume it as Null if it is not set
