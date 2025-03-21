@@ -37,11 +37,13 @@ output "csphase" {
 
 - `api_server_endpoint` (String) Kubernetes api server URL
 - `bids` (Attributes Set) (see [below for nested schema](#nestedatt--bids))
+- `cni` (String) Container Network Interface (CNI) used in the cloudspace.
 - `deployment_type` (String) deployment type for the cloudspace (gen1|gen2)
 - `first_ready_timestamp` (String) The time when the cloudspace was first ready.
 - `hacontrol_plane` (Boolean) High Availability Kubernetes (replicated control plane for redundancy). This is a critical feature for production workloads.
 - `health` (String) Health indicates if CloudSpace has a working APIServer and available nodes
 - `kubeconfig` (String, Deprecated) Kubeconfig blob
+- `kubernetes_version` (String) Kubernetes version deployed in the cloudspace.
 - `ondemandnodepool_ids` (List of String) IDs of the ondemandnodepools associated with the cloudspace.
 - `pending_allocations` (Attributes Set) (see [below for nested schema](#nestedatt--pending_allocations))
 - `phase` (String) Phase of the cloudspace

@@ -52,6 +52,11 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Name of the cloudspace",
 				DeprecationMessage:  "Use the name attribute instead",
 			},
+			"cni": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Container Network Interface (CNI) used in the cloudspace.",
+				MarkdownDescription: "Container Network Interface (CNI) used in the cloudspace.",
+			},
 			"deployment_type": schema.StringAttribute{
 				Computed:            true,
 				Description:         "deployment type for the cloudspace (gen1|gen2)",
@@ -84,6 +89,11 @@ func CloudspaceDataSourceSchema(ctx context.Context) schema.Schema {
 				Description:         "Kubeconfig blob",
 				MarkdownDescription: "Kubeconfig blob",
 				DeprecationMessage:  "Use the kubeconfig data source instead",
+			},
+			"kubernetes_version": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Kubernetes version deployed in the cloudspace.",
+				MarkdownDescription: "Kubernetes version deployed in the cloudspace.",
 			},
 			"name": schema.StringAttribute{
 				Optional:            true,
@@ -167,12 +177,14 @@ type CloudspaceModel struct {
 	ApiServerEndpoint   types.String `tfsdk:"api_server_endpoint"`
 	Bids                types.Set    `tfsdk:"bids"`
 	CloudspaceName      types.String `tfsdk:"cloudspace_name"`
+	Cni                 types.String `tfsdk:"cni"`
 	DeploymentType      types.String `tfsdk:"deployment_type"`
 	FirstReadyTimestamp types.String `tfsdk:"first_ready_timestamp"`
 	HacontrolPlane      types.Bool   `tfsdk:"hacontrol_plane"`
 	Health              types.String `tfsdk:"health"`
 	Id                  types.String `tfsdk:"id"`
 	Kubeconfig          types.String `tfsdk:"kubeconfig"`
+	KubernetesVersion   types.String `tfsdk:"kubernetes_version"`
 	Name                types.String `tfsdk:"name"`
 	OndemandnodepoolIds types.List   `tfsdk:"ondemandnodepool_ids"`
 	PendingAllocations  types.Set    `tfsdk:"pending_allocations"`

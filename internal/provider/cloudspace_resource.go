@@ -9,6 +9,7 @@ import (
 	"github.com/rackerlabs/terraform-provider-spot/internal/provider/resource_cloudspace"
 
 	"github.com/RSS-Engineering/ngpc-cp/pkg/ngpc"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -122,11 +123,13 @@ func (r *cloudspaceResource) Create(ctx context.Context, req resource.CreateRequ
 			Namespace: namespace,
 		},
 		Spec: ngpcv1.CloudSpaceSpec{
-			Region:         data.Region.ValueString(),
-			Cloud:          "default",
-			HAControlPlane: data.HacontrolPlane.ValueBool(),
-			Webhook:        data.PreemptionWebhook.ValueString(),
-			DeploymentType: data.DeploymentType.ValueString(),
+			Region:            data.Region.ValueString(),
+			Cloud:             "default",
+			HAControlPlane:    data.HacontrolPlane.ValueBool(),
+			Webhook:           data.PreemptionWebhook.ValueString(),
+			DeploymentType:    data.DeploymentType.ValueString(),
+			KubernetesVersion: data.KubernetesVersion.ValueString(),
+			CNI:               data.Cni.ValueString(),
 		},
 	}
 	tflog.Info(ctx, "Creating cloudspace", map[string]any{"name": cloudspace.ObjectMeta.Name})
@@ -342,6 +345,8 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	state.Region = types.StringValue(cloudspace.Spec.Region)
 	state.HacontrolPlane = types.BoolValue(cloudspace.Spec.HAControlPlane)
 	state.DeploymentType = types.StringValue(cloudspace.Spec.DeploymentType)
+	state.KubernetesVersion = types.StringValue(cloudspace.Spec.KubernetesVersion)
+	state.Cni = types.StringValue(cloudspace.Spec.CNI)
 	if cloudspace.Spec.Webhook != "" {
 		// even if we dont set string value it becomes "" by default
 		// assume it as Null if it is not set
@@ -349,11 +354,14 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	} else {
 		state.PreemptionWebhook = types.StringNull()
 	}
-	state.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.Format(time.RFC3339))
-	state.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
-	diags.Append(diags...)
-	if diags.HasError() {
-		return diags
+	state.FirstReadyTimestamp = types.StringValue(cloudspace.Status.FirstReadyTimestamp.UTC().Format(time.RFC3339))
+
+	// Always set SpotnodepoolIds to a known value since it may not be available after initial cloudspace creation
+	// This prevents Terraform from seeing an "unknown" value after apply
+	if len(cloudspace.Spec.BidRequests) > 0 {
+		state.SpotnodepoolIds, diags = types.ListValueFrom(ctx, types.StringType, cloudspace.Spec.BidRequests)
+	} else {
+		state.SpotnodepoolIds = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 
 	var bidsSlice []resource_cloudspace.BidsValue
@@ -412,33 +420,96 @@ func setCloudspaceState(ctx context.Context, cloudspace *ngpcv1.CloudSpace, stat
 	return diags
 }
 
-// This function returns retry function that waits for cloudspace to be ready
+// This function returns retry function that waits for cloudspace to be ready with some resilience
+// TODO: Is there non-polling based approach?
 func waitForCloudSpaceControlPlaneReady(ctx context.Context, ngpcClient ngpc.Client, name string, namespace string) backoff.Operation {
-	// TODO: Is there non-polling based approach?
+	consecutiveErrorCount := 0
+	maxConsecutiveErrors := 3
+	startTime := time.Now()
+	initialGracePeriod := 2 * time.Minute
+
 	return func() error {
-		tflog.Debug(ctx, "Reading cloudspace", map[string]any{"name": name, "namespace": namespace})
+		tflog.Debug(ctx, "Checking cloudspace readiness status", map[string]any{
+			"name":      name,
+			"namespace": namespace,
+			"age":       time.Since(startTime).String(),
+		})
+
 		cloudspace := &ngpcv1.CloudSpace{}
 		err := ngpcClient.Get(ctx, ktypes.NamespacedName{
 			Name:      name,
 			Namespace: namespace,
 		}, cloudspace)
 		if err != nil {
-			return backoff.Permanent(err)
+			// Only return permanent error if we can't reach the API
+			return backoff.Permanent(fmt.Errorf("failed to get cloudspace: %w", err))
 		}
 
+		// If APIServerEndpoint is available, the cloudspace is ready
 		if len(cloudspace.Status.APIServerEndpoint) > 0 {
 			tflog.Debug(ctx, "Cloudspace control plane is ready", map[string]any{"name": name})
 			return nil
 		}
 
+		tflog.Debug(ctx, "Cloudspace status", map[string]any{
+			"name":              name,
+			"phase":             cloudspace.Status.Phase,
+			"reason":            cloudspace.Status.Reason,
+			"age":               time.Since(startTime).String(),
+			"consecutiveErrors": consecutiveErrorCount,
+		})
+
+		inGracePeriod := time.Since(startTime) < initialGracePeriod
+
+		// Handle states with resilience
 		switch cloudspace.Status.Phase {
-		case ngpcv1.CloudSpacePhaseError:
-			fallthrough
 		case ngpcv1.CloudSpacePhaseDeleting:
-			return backoff.Permanent(fmt.Errorf("cloudspace %s is in %s phase", name, cloudspace.Status.Phase))
+			return backoff.Permanent(fmt.Errorf("cloudspace %s is being deleted", name))
+
+		case ngpcv1.CloudSpacePhaseError:
+			if inGracePeriod {
+				// During grace period, log but continue waiting
+				tflog.Info(ctx, "Ignoring error state during grace period", map[string]any{
+					"name":          name,
+					"reason":        cloudspace.Status.Reason,
+					"timeRemaining": (initialGracePeriod - time.Since(startTime)).String(),
+				})
+				return fmt.Errorf("cloudspace %s is in Error phase during grace period: %s",
+					name, cloudspace.Status.Reason)
+			}
+
+			consecutiveErrorCount++
+			if consecutiveErrorCount >= maxConsecutiveErrors {
+				// If too many consecutive errors, give up
+				return backoff.Permanent(fmt.Errorf("cloudspace %s is persistently in Error phase: %s",
+					name, cloudspace.Status.Reason))
+			}
+
+			tflog.Info(ctx, "Cloudspace in error state but continuing to wait", map[string]any{
+				"name":                 name,
+				"reason":               cloudspace.Status.Reason,
+				"consecutiveErrors":    consecutiveErrorCount,
+				"maxConsecutiveErrors": maxConsecutiveErrors,
+			})
+			return fmt.Errorf("cloudspace %s is in Error phase (%d/%d consecutive errors): %s",
+				name, consecutiveErrorCount, maxConsecutiveErrors, cloudspace.Status.Reason)
+
+		case ngpcv1.CloudSpacePhaseProvisioning, ngpcv1.CloudSpacePhaseUpgrading, ngpcv1.CloudSpacePhaseNoWinningBids:
+			// Known, reset error count and continue waiting
+			consecutiveErrorCount = 0
+			tflog.Info(ctx, "Cloudspace is in a transitional state", map[string]any{
+				"name":  name,
+				"phase": cloudspace.Status.Phase,
+			})
+			return fmt.Errorf("cloudspace %s is in %s phase", name, cloudspace.Status.Phase)
+
 		default:
-			tflog.Info(ctx, "Cloudspace is not ready yet", map[string]any{"name": name, "phase": cloudspace.Status.Phase})
-			return fmt.Errorf("cloudspace %s is not ready yet", name)
+			// Unknown state, no increment to error counter
+			tflog.Info(ctx, "Cloudspace is not ready yet", map[string]any{
+				"name":  name,
+				"phase": cloudspace.Status.Phase,
+			})
+			return fmt.Errorf("cloudspace %s is not ready yet (phase: %s)", name, cloudspace.Status.Phase)
 		}
 	}
 }

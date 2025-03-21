@@ -402,6 +402,62 @@
 						}
 					},
 					{
+						"name": "kubernetes_version",
+						"string": {
+							"default": {
+								"static": "1.31.1"
+							},
+							"computed_optional_required": "computed_optional",
+							"description": "Kubernetes version to deploy in the cloudspace. Supported values: 1.29.6, 1.30.10, 1.31.1",
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "cni",
+						"string": {
+							"default": {
+								"static": "calico"
+							},
+							"computed_optional_required": "computed_optional",
+							"description": "Container Network Interface (CNI) to use. Supported values: calico, cilium, byocni",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.OneOf(\"calico\", \"cilium\", \"byocni\")"
+									}
+								}
+							],
+							"plan_modifiers": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+											}
+										],
+										"schema_definition": "stringplanmodifier.UseStateForUnknown()"
+									}
+								}
+							]
+						}
+					},
+					{
 						"name": "deployment_type",
 						"string": {
 							"default": {
@@ -1251,6 +1307,20 @@
 						"string": {
 							"computed_optional_required": "computed",
 							"description": "Reason contains the reason why the CloudSpace is in a certain phase."
+						}
+					},
+					{
+						"name": "kubernetes_version",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Kubernetes version deployed in the cloudspace."
+						}
+					},
+					{
+						"name": "cni",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Container Network Interface (CNI) used in the cloudspace."
 						}
 					},
 					{

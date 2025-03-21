@@ -72,6 +72,19 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`), "Must be a valid kubernetes name"),
 				},
 			},
+			"cni": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Container Network Interface (CNI) to use. Supported values: calico, cilium, byocni",
+				MarkdownDescription: "Container Network Interface (CNI) to use. Supported values: calico, cilium, byocni",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.OneOf("calico", "cilium", "byocni"),
+				},
+				Default: stringdefault.StaticString("calico"),
+			},
 			"deployment_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -113,6 +126,16 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"kubernetes_version": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kubernetes version to deploy in the cloudspace. Supported values: 1.29.6, 1.30.10, 1.31.1",
+				MarkdownDescription: "Kubernetes version to deploy in the cloudspace. Supported values: 1.29.6, 1.30.10, 1.31.1",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Default: stringdefault.StaticString("1.31.1"),
 			},
 			"last_updated": schema.StringAttribute{
 				Computed:            true,
@@ -204,10 +227,12 @@ func CloudspaceResourceSchema(ctx context.Context) schema.Schema {
 type CloudspaceModel struct {
 	Bids                types.Set    `tfsdk:"bids"`
 	CloudspaceName      types.String `tfsdk:"cloudspace_name"`
+	Cni                 types.String `tfsdk:"cni"`
 	DeploymentType      types.String `tfsdk:"deployment_type"`
 	FirstReadyTimestamp types.String `tfsdk:"first_ready_timestamp"`
 	HacontrolPlane      types.Bool   `tfsdk:"hacontrol_plane"`
 	Id                  types.String `tfsdk:"id"`
+	KubernetesVersion   types.String `tfsdk:"kubernetes_version"`
 	LastUpdated         types.String `tfsdk:"last_updated"`
 	Name                types.String `tfsdk:"name"`
 	PendingAllocations  types.Set    `tfsdk:"pending_allocations"`
